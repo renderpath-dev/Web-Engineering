@@ -1,10 +1,40 @@
 {
   "compilerOptions": {
-    "target": "es2016",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
     "strict": true,
-    "skipLibCheck": true
-  }
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noEmitOnError": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "TypeScript tutorial/TypeScript Programming/tooling-integration/10-mini-project/src",
+    "TypeScript tutorial/TypeScript Programming/tooling-integration/10-mini-project/vite.config.ts",
+    "TypeScript tutorial/TypeScript Programming/tooling-integration/10-mini-project/vitest.config.ts",
+    "TypeScript tutorial/TypeScript Programming/tsx-deep-dive/**/*.tsx"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "Github-Projects",
+    "Github-Solidate",
+    "typescript-book-chinese"
+  ]
 }
