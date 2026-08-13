@@ -271,9 +271,9 @@ If the local PDF conflicts with current official documentation, follow the offic
 | 14 | React 19 Actions, use API, and React Compiler | Done | `docs/react/chapter-14-react-19-actions-compiler/`, `src/learning/react/chapter-14-react-19-actions-compiler/` |
 | 15 | Production Frontend Architecture, Design System, and Engineering Governance | Done | `docs/react/chapter-15-production-frontend-architecture/`, `src/learning/react/chapter-15-production-frontend-architecture/` |
 | 16 | SellerHub Capstone, Production Feature Delivery, and Portfolio Evidence | Done | `docs/react/chapter-16-sellerhub-capstone/`, `src/learning/react/chapter-16-sellerhub-capstone/` |
-| 17 | React Official API Gaps, Escape Hatches, and External Store Boundary | Done; depth repair pending | `docs/react/chapter-17-official-api-gaps/`, `src/learning/react/chapter-17-official-api-gaps/` |
-| 18 | React DOM, Server / Static APIs, and Legacy API Reading | Done; depth repair pending | `docs/react/chapter-18-react-dom-server-static-legacy/`, `src/learning/react/chapter-18-react-dom-server-static-legacy/` |
-| 19 | Vite, Module Graph, HMR, Env, Assets, and Production Build | Done; depth repair pending | `docs/react/chapter-19-vite-module-graph-hmr-env-assets-build/`, `src/learning/react/chapter-19-vite-module-graph-hmr-env-assets-build/` |
+| 17 | React Official API Gaps, Escape Hatches, and External Store Boundary | Done; depth repair completed | `docs/react/chapter-17-official-api-gaps/`, `src/learning/react/chapter-17-official-api-gaps/` |
+| 18 | React DOM, Server / Static APIs, and Legacy API Reading | Done; depth repair completed | `docs/react/chapter-18-react-dom-server-static-legacy/`, `src/learning/react/chapter-18-react-dom-server-static-legacy/` |
+| 19 | Vite, Module Graph, HMR, Env, Assets, and Production Build | Done; depth repair completed | `docs/react/chapter-19-vite-module-graph-hmr-env-assets-build/`, `src/learning/react/chapter-19-vite-module-graph-hmr-env-assets-build/` |
 | 20 | Error Boundaries, Recovery UI, and Failure Handling | Done; newer guide standard | `docs/react/chapter-20-error-boundaries-recovery-failure-handling/`, `src/learning/react/chapter-20-error-boundaries-recovery-failure-handling/` |
 | 21 | Accessibility, Semantic HTML, ARIA, and Keyboard Interaction | Done; newer guide standard | `docs/react/chapter-21-accessibility-semantic-html-aria-keyboard/`, `src/learning/react/chapter-21-accessibility-semantic-html-aria-keyboard/` |
 | 22 | State Architecture, Server State, URL State, and Form State Boundary | Done; newer guide standard | `docs/react/chapter-22-state-architecture-server-url-form-boundary/`, `src/learning/react/chapter-22-state-architecture-server-url-form-boundary/` |
@@ -281,7 +281,7 @@ If the local PDF conflicts with current official documentation, follow the offic
 | 24 | Data Fetching, Cancellation, Race Condition, and Cache Boundary | Done; newer guide standard | `docs/react/chapter-24-data-fetching-cancellation-race-cache-boundary/`, `src/learning/react/chapter-24-data-fetching-cancellation-race-cache-boundary/` |
 | 25 | Deployment Observability, Runtime Error, Performance Evidence, and Release Gate | Done; newer guide standard | `docs/react/chapter-25-deployment-observability-runtime-error-performance-release-gate/`, `src/learning/react/chapter-25-deployment-observability-runtime-error-performance-release-gate/` |
 
-Chapters 17-19 are scheduled for a later teaching-depth repair pass. Chapters 20-25 follow the newer guide standard with code examples, line-by-line explanations, execution flow, wrong examples, corrected versions, and evidence-based self-checks.
+Chapters 17-19 have completed the teaching-depth repair pass. Chapters 20-25 follow the newer guide standard with code examples, line-by-line explanations, execution flow, wrong examples, corrected versions, and evidence-based self-checks.
 
 ## Practice Principles
 

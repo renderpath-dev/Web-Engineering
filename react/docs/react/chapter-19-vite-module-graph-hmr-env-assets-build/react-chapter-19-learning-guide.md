@@ -370,6 +370,15 @@ Open /react/chapter-19
 
 **常见错误：** 看到页面空白就只查 component state，而不查 module import、CSS module declaration、asset query 或 dynamic import。判断方法是先看 network/module error，再看 React component stack。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | “页面空白，所以一定是 React state bug。” | Vite transform、module request、asset URL 和 React render 属于不同 owner |
+| Correct | 先看 terminal transform error、Network module request、console import error，再看 React component stack | tooling failure 不进入 React error boundary 时，不能用 component state 解释 |
+
+**执行过程补充：** `npm run dev` 启动的是 tooling runtime；browser 请求 HTML 和 ESM modules；Vite transform 后返回 JavaScript；React 只有在 entry module 执行、root 创建后才参与 UI。真实项目排错要按“HTML -> module -> transform -> React root -> component render”顺序定位。
+
 <a id="section-9-2"></a>
 
 ### 9.2 index.html 与 module graph：为什么入口不是隐藏模板
@@ -396,6 +405,15 @@ Open /react/chapter-19
 
 **练习文件：** `02-index-module-graph/index-module-graph-panel.tsx` 把 HTML entry、main module、App shell、manifest lazy entry 和 CSS/assets 画成 module graph。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 删除 `index.html` 中的 module script，以为 `main.tsx` 会被 Vite 自动发现 | Vite 需要 HTML 或 explicit entry 指向 module graph root |
+| Correct | `index.html` 保留 root container 和 `<script type="module" src="/src/sudoku/main.tsx">` | HTML entry、root DOM node、module graph entry 是同一启动链的一部分 |
+
+**执行过程补充：** browser 先解析 HTML，不知道 TSX；Vite 根据 script URL 找到 TSX source 并 transform；`src/sudoku/main.tsx` 再 import `src/App.tsx`。如果 script path 写错，React code 根本不会执行，调试 state 没意义。
+
 <a id="section-9-3"></a>
 
 ### 9.3 Dev server 与 native ESM：浏览器如何按需加载模块
@@ -406,6 +424,15 @@ Open /react/chapter-19
 
 **练习文件：** `03-dev-server-native-esm/dev-server-module-request-panel.tsx` 展示 request waterfall、source transform 和 dev/build 差异。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 以为 dev server 已经提前生成一个和 production 一样的 bundle | 开发期浏览器按 native ESM graph 发起模块请求，Vite 按需 transform |
+| Correct | 用 Network panel 观察每个 source module URL；用 build output 另行审查 production chunks | dev request graph 和 production artifact graph 是两个 evidence source |
+
+**执行过程补充：** static import 会触发直接 module request；dynamic import 会在运行到该路径时请求 chunk/module；CSS 和 assets 也可形成 transformed responses。路径大小写、query、missing file 在 dev server 层失败，不是 React reconciliation 失败。
+
 <a id="section-9-4"></a>
 
 ### 9.4 Dependency pre-bundling：CommonJS / UMD compatibility 与 request reduction
@@ -415,6 +442,15 @@ Open /react/chapter-19
 **机制证据链：** 触发动作是 dev server 首次遇到 `react`、`react-dom`、`react-router` 这类 dependency import。Vite 的 optimizer 读取 package entry，转换 CommonJS/UMD 或多模块依赖为更适合 browser native ESM 的缓存结果。React runtime 仍然执行 React package exported functions；state cell、fiber identity 和 hooks rule 不由 optimizer 改写。TypeScript 根据 package types 检查 imports；它不控制 optimizer cache。错误形式是盲目配置 `optimizeDeps.include` / `exclude` 或把 `node_modules/.vite` 当成源码；识别信号是 dependency optimizer log、stale cache、dependency export mismatch。
 
 **练习文件：** `04-dependency-prebundling/dependency-prebundling-panel.tsx` 区分 app source modules、dependency modules 和 optimizer cache。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 把 `node_modules/.vite` 中的 optimized dependency 当成要编辑的源码 | pre-bundled dependency cache 是 dev optimizer output |
+| Correct | 修改真实 source 或 package version；必要时清理 optimizer cache 或调整 `optimizeDeps` | pre-bundling 优化 dev dependency loading，不改变 React hook semantics |
+
+**执行过程补充：** Vite 首次遇到 dependency import 时分析 package entry；optimizer 把 CommonJS/UMD 或 deep dependency graph 转成浏览器更友好的 ESM cache；app source 仍按 source module transform。真实项目中只有遇到 dependency export mismatch、stale optimizer cache 或 linked package 时才调整这个边界。
 
 <a id="section-9-5"></a>
 
@@ -445,6 +481,16 @@ if (import.meta.hot) {
 
 **练习文件：** `05-hmr-fast-refresh/hmr-fast-refresh-panel.tsx` 和 `05-hmr-fast-refresh/hmr-side-effect-module.ts` 讲 update、dispose、data、invalidate 和 full reload。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 修改 module 后发现 state 保留，就认为所有 edits 都会保留 state | Fast Refresh 只在 compatible component boundary 上尽量保留 hook state |
+| Wrong | module 启动 interval/subscription，但没有 `dispose` 清理 | HMR re-evaluates modules；persistent side effects must be disposed |
+| Correct | component-only edits 依赖 Fast Refresh；side-effect modules 用 `dispose`；不兼容 edits 接受 full reload | HMR 是 development convenience，不是 production lifecycle |
+
+**执行过程补充：** Vite 收到 file change 后沿 module graph 找 HMR boundary；旧 module 先运行 dispose；新 module 被 evaluate；React plugin 判断 component signature 是否可 refresh；不安全时 full reload。测试可以验证 pure classification model，但不能证明 live websocket HMR session。
+
 <a id="section-9-6"></a>
 
 ### 9.6 import.meta.env、modes 与 VITE_ client exposure
@@ -472,6 +518,16 @@ const maxRetries = Number(import.meta.env.VITE_MAX_RETRIES ?? '0')
 
 **练习文件：** `06-env-modes/env-boundary-panel.tsx` 和 `06-env-modes/env-mode-model.ts` 通过 env audit 把 public、server-only 和 unsafe-public keys 分开。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `VITE_PRIVATE_TOKEN=abc` 并相信前缀会隐藏它 | `VITE_` 表示允许进入 client bundle，不是 secret marker |
+| Wrong | `if (import.meta.env.VITE_FLAG)` 读取 `"false"` 并期待 false branch | `.env` values are strings unless explicitly parsed |
+| Correct | public client config 用 `VITE_`，private secrets 保留在 server/runtime outside client bundle；boolean/number 显式 parse | env exposure 和 runtime parsing 是两个独立边界 |
+
+**执行过程补充：** Vite transform/build 替换 built-in env constants 并暴露 prefixed values；React component 读取的是普通 JavaScript values；TypeScript augmentation 只改变编辑器和 compile-time view。真实项目中看到 password、token、secret、private key 带 `VITE_`，应立即当作泄漏风险。
+
 <a id="section-9-7"></a>
 
 ### 9.7 vite-env.d.ts 与 env type augmentation：类型系统和 runtime 的边界
@@ -481,6 +537,15 @@ const maxRetries = Number(import.meta.env.VITE_MAX_RETRIES ?? '0')
 **机制证据链：** 触发动作是 `tsc` 或 IDE 读取全局 declaration。TypeScript 把 `ImportMetaEnv` merge 到 `import.meta.env` 的类型上，使 `import.meta.env.VITE_API_BASE_URL` 有明确类型。JavaScript runtime 执行时没有 interface，也没有 declaration file。React render 读取的仍是普通 runtime value。错误形式是写了 `readonly VITE_FLAG: boolean` 就以为 `.env` 会自动变 boolean；识别信号是 UI 中显示 `"false"` 但条件判断按 truthy string 走。
 
 **练习文件：** `07-env-types/env-type-boundary-panel.tsx` 对比 type augmentation、runtime parsing 和 validation。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `interface ImportMetaEnv { readonly VITE_ENABLED: boolean }` 后直接当 boolean 使用 | declaration 不会改变 `.env` runtime string |
+| Correct | 类型声明描述 expected shape；runtime code 仍用 parser 把 string 转成 boolean/number | TypeScript type system is erased before browser execution |
+
+**执行过程补充：** `tsc` 读取 `.d.ts` 并给 `import.meta.env` 增强类型；Vite transform 注入 runtime values；browser 执行时没有 interface。识别信号是类型看起来是 boolean，但 UI branch 以 non-empty string truthiness 执行。
 
 <a id="section-9-8"></a>
 
@@ -492,6 +557,15 @@ const maxRetries = Number(import.meta.env.VITE_MAX_RETRIES ?? '0')
 
 **练习文件：** `08-css-modules/css-imports-modules-panel.tsx` 和 `08-css-modules/vite-scope-card.module.css` 展示 global CSS、local mapping 和 style update boundary。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `import styles from './card.css'` 后使用 `styles.card` | 普通 CSS import 注入样式，不导出 CSS Module mapping |
+| Correct | `card.module.css` 才作为 CSS Module import，并把 exported class string 交给 `className` | CSS module graph edge 与 React className prop 分层 |
+
+**执行过程补充：** Vite transform CSS import，dev 期可通过 style HMR 更新 style tag；CSS Module 额外生成 mapping object。React 不知道原始 selector，只接收 string。测试不要断言 hashed class 的具体值，应断言可见 behavior 或稳定语义。
+
 <a id="section-9-9"></a>
 
 ### 9.9 Static assets、public 目录、?url 与 ?raw imports
@@ -502,6 +576,16 @@ const maxRetries = Number(import.meta.env.VITE_MAX_RETRIES ?? '0')
 
 **练习文件：** `09-static-assets/static-asset-boundary-panel.tsx` 和 `09-static-assets/raw-release-note.md` 解释 source asset、public asset、raw text 和 base rewriting。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 在 component 中写死 `/src/assets/logo.svg` 作为 production URL | source file path 不是 production asset URL |
+| Wrong | 把 private release config 放进 `?raw` import | raw import content enters the client bundle |
+| Correct | 用 source import、`new URL(..., import.meta.url)` 或 public path，并用 build/base evidence 验证 URL | asset graph 与 deployment base 必须一起审查 |
+
+**执行过程补充：** source-imported asset 进入 build graph 并可能得到 hashed URL；public asset 原样复制到 root；raw import 变成 string literal-like module content。真实项目中 asset 404 通常要同时检查 import style、`base`、static host path 和 generated dist file。
+
 <a id="section-9-10"></a>
 
 ### 9.10 Web Workers 与 ?worker imports：browser thread boundary
@@ -511,6 +595,15 @@ const maxRetries = Number(import.meta.env.VITE_MAX_RETRIES ?? '0')
 **机制证据链：** 触发动作是 UI button 创建 worker 或发送 message。Vite transform `import WorkerConstructor from './worker?worker'`，JavaScript runtime 创建 Worker instance，main thread 通过 `postMessage` 发送 plain data。React state cell 只存在 main thread component owner 中；worker 只能返回 message，由 handler 再调用 setter。TypeScript 检查 message payload shape，但不保证 worker runtime 性能或 browser support。错误形式是在 worker 中直接读取 React hook 或 DOM node；识别信号是 runtime reference error、clone error 或 UI state 没有通过 message 更新。
 
 **练习文件：** `10-web-workers/vite-worker-boundary-panel.tsx` 和 `10-web-workers/sellerhub-metric.worker.ts` 展示 heavy metric crossing the thread boundary。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | worker module 直接 import React state hook 或读取 `document.querySelector` | Worker thread 不拥有 React hook dispatcher，也没有普通 DOM access |
+| Correct | main thread sends structured data; worker returns result; component handler commits result into state | Worker boundary is message passing plus cleanup |
+
+**执行过程补充：** Vite 把 `?worker` import 转为 constructor；button handler 创建 worker；main thread postMessage；worker computes and postMessage result；component receives event and calls setter；cleanup terminates worker。TypeScript 约束 message shape，但 structured clone 和 browser worker support 是 runtime/platform 边界。
 
 <a id="section-9-11"></a>
 
@@ -541,6 +634,15 @@ const noteModules = import.meta.glob('./content/*.md', {
 
 **练习文件：** `11-import-meta-glob/glob-module-map-panel.tsx` 和 `sellerhub-vite-boundary-lab/glob-content-reader.tsx` 对比 eager raw notes 和 lazy module map。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `import.meta.glob(userSelectedPattern)` | Vite must statically analyze the glob pattern during transform |
+| Correct | `import.meta.glob('./content/*.md', { eager: true, query: '?raw' })` | Literal scoped pattern creates a predictable module map |
+
+**执行过程补充：** glob expansion 发生在 browser runtime 之前；lazy mode 返回用于导入匹配模块的 functions；eager mode 会立即导入。React 只渲染已经创建好的 module map。如果内容缺失，先检查 pattern scope 和 transformed module map，而不是先怀疑 component state。
+
 <a id="section-9-12"></a>
 
 ### 9.12 Dynamic import 与 chunk boundary：React lazy、Vite split point 与限制
@@ -550,6 +652,16 @@ const noteModules = import.meta.glob('./content/*.md', {
 **机制证据链：** 触发动作是 route、tab 或 user action 需要加载一个 deferred module。JavaScript runtime 调用 `import('./chunk-audit-card')`，Vite/Rolldown 在 build 中把它变成 async chunk boundary，并可能预加载 shared chunks。React `lazy` 读取 promise status，通过 Suspense 展示 fallback，然后在 module resolved 后渲染 default export。TypeScript 检查 imported module exports，但不保证网络速度或 chunk 预加载策略。错误形式是过度动态路径如 `import(pathFromUser)`；识别信号是 build 无法分析、chunk 过碎或 fallback 被误当成 data loading。
 
 **练习文件：** `12-dynamic-import-chunks/dynamic-import-chunk-panel.tsx` 和 `12-dynamic-import-chunks/chunk-audit-card.tsx` 讲 React lazy 与 Vite split point 的关系。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `lazy(() => import(pathFromUser))` | bundler needs analyzable import boundaries; user input cannot define arbitrary source modules |
+| Wrong | 把 Suspense fallback 当成 data loading proof | fallback may represent code chunk loading, not server data fetching |
+| Correct | Use explicit dynamic imports for route/page-sized chunks and review build output | chunk boundary, route boundary, and data boundary are separate |
+
+**执行过程补充：** dynamic import 创建 async module request；Vite build 把它变成 output chunk；React `lazy` 等待 default export；Suspense 控制 UI fallback。真实项目 review 要检查 chunk size、loading UX、preloading behavior，以及这个 split point 是否真的减少 initial work。
 
 <a id="section-9-13"></a>
 
@@ -581,6 +693,16 @@ export default defineConfig({
 
 **练习文件：** `13-vite-config-plugin/vite-config-plugin-boundary-panel.tsx` 用 review table 解释 `defineConfig`、`resolve.alias`、plugin hook 和 when not to customize。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 在 `vite.config.ts` 中读取 `window.location` 或 DOM API | config runs in Node/tooling runtime, not browser runtime |
+| Wrong | 用 plugin 解决 component state ownership or prop drilling | plugins transform modules; they do not own React render state |
+| Correct | Add config/plugin only with import-path, transform, build, or dev-server evidence | Vite config changes must be tooling-motivated and testable |
+
+**执行过程补充：** config 会先于 dev/build pipeline 加载；plugins 参与 resolve/load/transform/build hooks；React component code 只看到 transformed module output。如果一个修改只是在修 component architecture，应该在 React code 中解决，而不是改 Vite config。
+
 <a id="section-9-14"></a>
 
 ### 9.14 build、preview、base path 与 static deployment
@@ -590,6 +712,16 @@ export default defineConfig({
 **机制证据链：** 触发动作是运行 `npm run build`。Vite 从 `index.html` 出发构建 app bundle、chunks 和 hashed assets，并按 `base` 重写 URLs。React runtime 在 build 阶段不渲染业务 UI；它只被打包进 output。TypeScript 是否参与取决于脚本，本项目用 `tsc -b && vite build`，所以 typecheck 和 bundle 是连续门。错误形式是在 nested path 部署但 `base` 仍为 `/`，或只跑 `vite preview` 就宣称 CDN fallback 已验证；识别信号是 production asset 404、SPA refresh 404、dist 中 URL 前缀错误。
 
 **练习文件：** `14-build-preview-deploy/build-preview-base-path-panel.tsx` 区分 build output、preview server、static host、base path 和 SPA fallback。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `vite preview` works locally, therefore production static host is configured | preview serves local build output; it does not prove CDN headers, fallback rewrites, or nested base |
+| Wrong | Deploy under `/react-lab/` while `base` remains `/` | asset URLs are rewritten relative to configured public base |
+| Correct | Build with the intended `base`, inspect generated URLs, and verify static host deep-link fallback separately | build artifact evidence and deployment evidence are separate gates |
+
+**执行过程补充：** `tsc -b` checks types; `vite build` walks HTML/module graph and emits hashed assets; `vite preview` serves `dist`; static deployment must still configure fallback for browser routes. Real release evidence includes generated `dist`, asset URL prefixes, host rewrite config, and a deep-link smoke test.
 
 <a id="section-9-15"></a>
 
@@ -601,6 +733,16 @@ export default defineConfig({
 
 **练习文件：** `15-ssr-backend-boundary/ssr-backend-boundary-panel.tsx` 把 SSR、backend integration、Next.js framework runtime 和 current Vite client lab 分开。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | Add `react-dom/server` snippets to a browser component and call it SSR support | SSR needs a server entry, response owner, client entry, and hydration plan |
+| Wrong | Treat Vite backend integration manifest as active in this project | This app currently has no backend HTML owner consuming a manifest |
+| Correct | Document SSR/backend as reading-only boundary until a future task introduces real server/build ownership | Do not fake runtime ownership to satisfy topic coverage |
+
+**执行过程补充：** Vite SSR has separate server/client concerns; backend integration has manifest and host HTML concerns. Current project only has `index.html` and browser client root. If future work adds SSR, it must add explicit server files, scripts, tests, and deployment assumptions; this chapter does not do that.
+
 <a id="section-9-16"></a>
 
 ### 9.16 SellerHub Vite tooling mapping
@@ -611,6 +753,17 @@ export default defineConfig({
 
 **练习文件：** `16-sellerhub-vite-tooling-map/sellerhub-vite-tooling-map.tsx` 把 SellerHub feature slice 对应到 entry、env、assets、worker、glob、dynamic import 和 build review。
 
+**错误边界与修正：**
+
+| SellerHub concern | Wrong owner | Correct owner |
+| --- | --- | --- |
+| Feature flag secret | React Context in client bundle | Server/private runtime; only public flags use `VITE_` |
+| Product asset URL | Hardcoded source path in component | Vite asset import plus base-aware build output |
+| Heavy metric calculation | Block React render with synchronous loop | Worker boundary or memoized derived computation based on measured cost |
+| Route page split | Random dynamic import string | Explicit lazy import and build chunk review |
+
+**执行过程补充：** SellerHub review maps each problem to the owner that can actually enforce it. React owns UI state; Vite owns module/build transforms; browser owns worker/asset/network execution; static host owns fallback paths. Mixing these owners creates bugs that tests in only one layer may miss.
+
 <a id="section-9-17"></a>
 
 ### 9.17 最终小项目：SellerHub Vite Boundary Lab
@@ -620,6 +773,17 @@ export default defineConfig({
 **机制证据链：** 触发动作是打开 `/react/chapter-19` 并阅读 final lab cards。JavaScript runtime 加载 lab modules；React render snapshot 组织每张 card；worker demo 只有在用户触发时跨 thread；glob reader 展示 compile-time module map；dynamic chunk card 展示 split point；env auditor 对普通 object entries 做风险分类。TypeScript 检查 props、env audit model 和 test assertions；它不证明 real host、CDN、HMR websocket 或 SSR server。错误形式是把 lab 的 boundary explanation 当成真实部署证据；识别信号是没有真实 deployment URL、server logs、manifest integration 或 browser HMR session evidence。
 
 **练习文件：** `sellerhub-vite-boundary-lab/sellerhub-vite-boundary-lab.tsx` 组合 module graph inspector、HMR lifecycle、env auditor、asset lab、worker panel、glob reader、dynamic chunk card、build/deploy decision table 和 tooling review checklist。
+
+**错误边界与修正：**
+
+| Lab evidence | What it proves | What it does not prove |
+| --- | --- | --- |
+| Env auditor tests | public-prefix secret names can be detected in a model | real secrets are absent from every deployment environment |
+| Worker panel | worker message boundary works in browser-like runtime | every production device has acceptable worker performance |
+| Glob reader | Vite transformed static content patterns | runtime filesystem access exists in the browser |
+| Build/deploy table | learner can classify build/base/preview decisions | production deployment has actually succeeded |
+
+**执行过程补充：** final lab 是 tooling review workspace。它整合 module graph、HMR classification、env exposure、assets、workers、glob、dynamic chunks 和 build/deploy review；但 production hosting 和 SSR 仍然是 evidence gaps，除非后续通过真实 deployment task 单独验证。
 
 ## 10. API / 语法索引
 

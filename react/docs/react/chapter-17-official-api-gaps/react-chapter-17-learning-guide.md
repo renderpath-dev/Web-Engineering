@@ -312,6 +312,18 @@ npm run dev
 
 **与真实文件的关系：** `api-gap-boundary-panel.tsx` 把 runnable client APIs 与 boundary-only APIs 分开显示；它不改动前 1-16 章。
 
+**边界示例：**
+
+| 判断对象 | 错误边界 | 违反的规则 | 修正后的判断 | 真实项目识别信号 |
+| --- | --- | --- | --- | --- |
+| `useDeferredValue` | 看到“defer”就拿来减少 HTTP 请求 | 它延后的是下游 UI render，不是 event、timer 或 fetch 调度 | 用它保留旧列表、降低 expensive rendering 对输入的阻塞；网络节流仍由 debounce/cache/request layer 处理 | 需求写着“少发请求”时不要先选它；需求写着“输入不卡，旧结果可短暂保留”时才考虑 |
+| `cache` / `cacheSignal` | 在 client component 中包装 fetch 并宣称得到 server cache | server/framework context 不能由 TypeScript import 伪造 | 在本 Vite lab 只作为 Server Components / framework boundary 阅读 | API 文档提到 Server Components、render cache lifetime、framework integration |
+| `captureOwnerStack` | 把 owner stack 当作 production analytics payload | development diagnostic 不等于业务数据模型 | 作为诊断边界说明，不做用户可见功能 | 需求属于 error overlay、dev diagnostics、owner trace，而不是用户流程 |
+
+**执行过程：** 先从工程问题出发，识别 value owner 是 React state、external store、DOM node、CSS runtime、effect subscription、server render context 还是 development diagnostic；再检查官方 API 的 runtime 条件；最后决定是写 runnable TSX、写 boundary card，还是只放在 review checklist 中。这个顺序能避免“为了覆盖 API 而写代码”。
+
+**边界解释：** JavaScript 只能执行已经进入 browser bundle 的代码；React 只在特定 hook call position、render phase、commit phase、server/framework context 或 DevTools/diagnostic context 给 API 语义；TypeScript 只确认导出和调用签名，不证明当前 runtime 具备该 API 的正确执行环境。
+
 <a id="section-9-2"></a>
 
 ### 9.2 useDeferredValue：deferred rendering 与 stale UI
@@ -331,6 +343,19 @@ npm run dev
 7. 真实项目中，如果用户输入不卡但列表慢，且旧结果短暂保留是可接受体验，就考虑 deferred value。
 
 **真实练习文件：** `02-deferred-value/deferred-catalog-search.tsx`。
+
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | `const deferredQuery = useDeferredValue(query)` 后仍用 `query` 过滤昂贵列表，并期待 fewer requests | expensive consumer 没有读取 deferred value，所以 render cost 仍跟 urgent input 同步；fetch count 也不会被减少 |
+| Correct | input 使用 `query`，list 使用 `deferredQuery`，并用 `query !== deferredQuery` 显示 stale indicator | React 先提交 urgent input snapshot，再尝试 background render，让 slow consumer 追上最新 value |
+
+**执行过程：** 输入事件先让 browser control 得到候选 string；handler 调用 `setQuery(nextQuery)`；下一次 render 中 input 读取最新 `query`，而 `useDeferredValue(query)` 可以返回上一轮 `deferredQuery`；列表继续基于旧 value 渲染；background render 完成后，列表使用新 deferred value commit。若期间又输入新字符，旧 background render 可被打断并重启。
+
+**逐行机制对应：** `const [query, setQuery] = useState('')` 拥有 urgent input value；`const deferredQuery = useDeferredValue(query)` 创建 lagging consumer value；`value={query}` 保证输入框不延迟；`products.filter(...deferredQuery...)` 才是被延后的 expensive consumer；`query !== deferredQuery` 是可见 stale evidence。
+
+**识别同类问题：** 如果 profiler 显示慢的是列表、图表、Markdown preview 或搜索结果渲染，而不是网络请求或算法本身，`useDeferredValue` 才是候选；如果需求是合并请求、取消请求或减少 HTTP 次数，应回到 Chapter 24 的 abort/cache/request boundary。
 
 <a id="section-9-3"></a>
 
@@ -352,6 +377,17 @@ npm run dev
 
 **真实练习文件：** `03-transition-boundary/transition-filter-workspace.tsx`。
 
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | 把 controlled input 的 `setText(nextText)` 放进 `startTransition` | React 官方边界要求 text input control state 不能由 Transition 控制，否则输入反馈会被标成 non-urgent |
+| Correct | `setText(nextText)` 保持 urgent，只把 `setVisibleFilter(nextFilter)` 或 large result update 放进 transition | urgent state cell 先保证 control feedback，transition state cell 可以延后并通过 `isPending` 给出 pending UI |
+
+**执行过程：** handler 同步运行；transition action 不是延迟调用的 timer，而是立即执行并把其中同步触发的 state updates 标记为 non-blocking；React 遇到更 urgent 的输入或点击时可以中断 transition render；commit 后 `isPending` 回到 false。
+
+**边界解释：** JavaScript callback 本身仍立即执行；React scheduler 标记的是 state update priority；TypeScript 只检查 category union、setter 参数和 callback 类型，不判断某次 update 是否应该 urgent。真实项目里，tab content、route-like pane、filter result 可以 transition；输入值、checkbox checked、drag position 这类 control feedback 不应该 transition。
+
 <a id="section-9-4"></a>
 
 ### 9.4 useDeferredValue vs useTransition：value lag 和 update priority 的区别
@@ -371,6 +407,18 @@ npm run dev
 7. 真实项目中，search query 常用 deferred value；tab content 或大区域切换常用 transition。
 
 **真实练习文件：** `04-deferred-vs-transition/deferred-vs-transition-panel.tsx`。
+
+**边界示例：**
+
+| Decision | Correct API | Why |
+| --- | --- | --- |
+| Parent receives a rapidly changing prop and wants a slow child to lag | `useDeferredValue(prop)` | 你没有 prop 的 setter，只能 defer value consumption |
+| Handler owns the state update and knows it is non-urgent | `useTransition` / `startTransition` | 你能包住 setter，并给 UI 暴露 pending state |
+| Need fewer network requests | neither by itself | request boundary 需要 debounce/cache/abort，不是 render scheduling |
+
+**执行过程：** deferred value 从“已经产生的新 value”开始分叉，当前 render 可继续给下游旧 value；transition 从“即将排队的 update”开始标记 priority。前者的关键变量是 `value` 与 `deferredValue`；后者的关键变量是 urgent state、transition state 与 `isPending`。
+
+**错误识别：** 如果代码同时保留 `deferredQuery`、`visibleQuery`、`pendingQuery`，却不能说明哪个变量控制 input、哪个变量控制 expensive consumer、哪个变量代表 pending evidence，通常说明把两种机制混在一起了。修正方式是先画 owner：value consumer lag 用 deferred，setter priority 用 transition。
 
 <a id="section-9-5"></a>
 
@@ -418,6 +466,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `05-sync-external-store/browser-inventory-store.ts`、`05-sync-external-store/sync-external-store-panel.tsx`。
 
+**错误边界与修正：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | `getSnapshot() { return { items: store.items } }` | 每次 render 都创建新 object；即使 external data 没变，React 也会读到新 identity |
+| Correct | 只有 mutation path 替换 `currentSnapshot`；无变化时 `getSnapshot` 返回同一引用 | React 可以用 snapshot identity 判断是否需要重新渲染 subscriber |
+
+**执行过程：** external store 先在 React 外部变更；mutation function 生成 next immutable snapshot；listeners 被调用；React 在 subscriber render 前后读取 snapshot；如果 snapshot 在相同数据下保持同一引用，UI 稳定；如果每次都新建对象，可能触发重复 render 或官方 troubleshooting 中的 cached snapshot warning。
+
+**真实项目识别：** 看到 `window.addEventListener('storage')`、`matchMedia`、WebSocket cache、third-party observable store 时，先问 source owner 是否在 React 外部；如果答案是 yes，再检查 `subscribe` 是否返回 unsubscribe、`getSnapshot` 是否缓存无变化 identity。
+
 <a id="section-9-6"></a>
 
 ### 9.6 useId：accessibility ID、hydration consistency 与 key 的区别
@@ -437,6 +496,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 7. 真实项目中，设计系统 field component 可以用 `useId` 处理 label/help/error relationship。
 
 **真实练习文件：** `06-use-id/accessibility-id-panel.tsx`。
+
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | `items.map((item) => <Row key={useId()} item={item} />)` | key 必须表达 sibling data identity；hook 不能在 loop 中调用，生成 ID 也不能替代 domain ID |
+| Correct | `const fieldId = useId()`，再把它传给 `id`、`htmlFor`、`aria-describedby` | ID 绑定 hook call position，用于 DOM association；list key 继续使用 `item.id` |
+
+**执行过程：** render 到达固定 hook call position；React 产生该 owner path 下稳定 ID；JSX 把 ID 写到 label/input/help text 之间；browser accessibility tree 根据 matching DOM IDs 建立关系。TypeScript 只确认 prop value 是 string，不会证明 DOM ID 唯一，也不会检查 accessible name 是否符合产品语义。
+
+**识别同类问题：** 如果错误表现是 screen reader 读不到 help/error text、多个 field 共用同一个 `id`、label click 聚焦错字段，优先检查 `useId` 或显式 ID 传递；如果错误表现是列表状态串行、checkbox 勾选错行，优先检查 key，不要用 `useId` 修。
 
 <a id="section-9-7"></a>
 
@@ -458,6 +528,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `07-use-debug-value/use-debug-value-panel.tsx`。
 
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | `const label = useDebugValue(status)` 后在 JSX 中读取 label | `useDebugValue` 没有返回 UI state；它只给 DevTools 描述 custom hook |
+| Correct | UI 读取 `status`，custom hook 内部调用 `useDebugValue(status, formatStatus)` | runtime UI 与 diagnostic label 分离，调试增强不会成为业务依赖 |
+
+**执行过程：** custom hook 先计算真实业务值；`useDebugValue` 注册一个 DevTools 可读 label 或 formatter；页面 render output 不会因为该调用增加 DOM；只有开发者检查 hooks 时才看到 label。TypeScript 能检查 formatter 参数，但不会保证 DevTools 一定打开，也不会让 label 进入 component props。
+
+**真实项目识别：** 如果一个 custom hook 很难在 DevTools 中区分，例如 `useInventoryStore`、`useFeatureFlag`、`useSellerSession`，可以加 debug label；如果产品逻辑、analytics payload 或测试断言依赖 debug label，则边界已经错了。
+
 <a id="section-9-8"></a>
 
 ### 9.8 useLayoutEffect：commit 后、paint 前的 DOM measurement
@@ -477,6 +558,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 7. 真实项目中，只在必须依赖真实 DOM measurement 时使用。
 
 **真实练习文件：** `08-layout-effect/layout-measurement-panel.tsx`。
+
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | 在每个数据同步 effect 中都改成 `useLayoutEffect` | layout effect 会阻塞 paint；普通 network、analytics、title sync 不需要 paint 前完成 |
+| Correct | 只在 tooltip position、scroll measurement、popover placement 这类 DOM read/write 中使用 | DOM 已 commit，但 browser 尚未 paint，measurement 和同步修正可以避免闪烁 |
+
+**执行过程：** React render 只返回 element description，不读 layout；commit phase 把 DOM mutation 写入页面；layout effect 在 paint 前运行，读取 `ref.current` 和 layout box；如果需要修正 state，React 可再次同步 render/commit；最后 browser paint 已修正的 UI。
+
+**识别同类问题：** 如果用户看到“先出现在错误位置再跳一下”，且原因是必须读取真实 DOM 尺寸，layout effect 合理；如果只是数据请求、日志、localStorage 或 document title，使用 ordinary effect，避免阻塞首屏 paint。
 
 <a id="section-9-9"></a>
 
@@ -498,6 +590,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `09-insertion-effect/css-insertion-boundary-panel.tsx`。
 
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | 在 `useInsertionEffect` 中 fetch theme token 或读取 `getBoundingClientRect()` | insertion effect 发生在 layout effects 前，目标是 style insertion；它不是数据同步或 measurement API |
+| Correct | CSS runtime 根据本次 render 的 style rule 把 rule 插入 style element，然后 layout effect 才读取应用后的 layout | style insertion timing 与 DOM measurement timing 分离 |
+
+**执行过程：** render 计算出 CSS rule string；commit 后 React 运行 insertion effect；style element 被更新；随后 layout effect 或 browser layout 可以基于已插入的 CSS 计算尺寸。TypeScript 只检查 DOM API 和 string，不会验证 CSS selector 是否安全，也不会判断团队是否应该引入 runtime CSS 策略。
+
+**真实项目识别：** 如果你不是在写 CSS-in-JS runtime、design token runtime 或 style injection library，几乎不需要直接调用它。业务组件里出现 fetch、subscription、analytics 或 measurement inside insertion effect，通常就是错误边界。
+
 <a id="section-9-10"></a>
 
 ### 9.10 useImperativeHandle：imperative ref handle 与 controlled component 边界
@@ -517,6 +620,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 7. 真实项目中，focus、scroll、reset command 是合理用例；业务数据仍走 controlled props。
 
 **真实练习文件：** `10-imperative-handle/imperative-search-panel.tsx`。
+
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | Parent ref 直接拿到 child input DOM node，然后改 `value` 和 `style` | Parent 绕过 controlled state owner 和 child boundary，可能让 DOM 与 React snapshot 分离 |
+| Correct | Child 暴露 `{ focusSearch, resetSearch, scrollToResults }`，数据仍由 props/state 管理 | imperative handle 只开放命令，不开放内部结构 |
+
+**执行过程：** parent 创建 ref object；child render 到固定 hook call position；`useImperativeHandle` 在 commit 期间把 handle object 赋给 parent ref；parent event handler 读取 `ref.current` 并调用有限命令；child 内部再决定使用 DOM ref、state setter 或 scroll API。TypeScript 限制可见方法名，但 runtime 仍需要处理 `null`。
+
+**识别同类问题：** 合理需求通常是 focus、scroll、reset、play/pause；如果 parent 想读取 child 内部全部 state、直接 mutate input value、改 className 或调用私有方法，应改回 props/callback/state ownership，而不是扩大 handle。
 
 <a id="section-9-11"></a>
 
@@ -538,6 +652,17 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `11-effect-event/effect-event-latest-value-panel.tsx`。
 
+**边界示例：**
+
+| Form | Example | Mechanism |
+| --- | --- | --- |
+| Wrong | 删除 dependency array 中的 `channel`、`draftNote`，只为避免 resubscribe warning | 这是隐藏 reactive dependency；callback 可能读取 stale closure |
+| Correct | effect 只依赖 subscription owner，latest value read 放进 `useEffectEvent` 返回的 function | setup/cleanup 的 reactive boundary 与 event-like latest read boundary 分离 |
+
+**执行过程：** render 创建最新 state snapshot；`useEffectEvent` 返回能读取 latest snapshot 的 effect event；`useEffect` 只安装一次或只随真正的 subscription key 更新；外部事件触发 listener；listener 调用 effect event，读取最新 `channel` 和 `draftNote`。TypeScript 只检查函数签名，不会替你决定哪些 values 应该 reactive。
+
+**真实项目识别：** analytics、audit log、subscription callback、socket message handler 常需要“安装时机稳定，但执行时读最新值”。如果读取的值应该改变 subscription 本身，例如 room id、topic id、user id，则不能用 effect event 隐藏它，必须放入 dependency。
+
 <a id="section-9-12"></a>
 
 ### 9.12 cache / cacheSignal / captureOwnerStack：framework、server 与 diagnostic boundary
@@ -558,6 +683,18 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `12-framework-diagnostic-boundary/framework-diagnostic-boundary-panel.tsx`。
 
+**边界示例：**
+
+| API | Wrong boundary | Correct boundary | Recognition |
+| --- | --- | --- | --- |
+| `cache` | 当成 client `useMemo` 或 fetch cache | Server Components / framework render cache reading | 需求涉及 server render dedupe、RSC data reads、framework loader |
+| `cacheSignal` | 在 click handler 里取消浏览器请求 | render cache lifetime signal，Client Components 中不是普通 abort owner | 文档提到 rendering finished、cache lifetime、Server Components |
+| `captureOwnerStack` | 当作 production analytics state | development-only diagnostic owner stack | 需求来自 error overlay、console patch、debug tooling |
+
+**执行过程：** browser bundle 可以 import 某些导出，但 React runtime 会根据 dispatcher、environment 和 development/production mode 决定语义；server/framework API 需要 render context，diagnostic API 需要 owner stack context；没有这些 context 时，代码不能声称实现了 server cache 或 production telemetry。
+
+**识别同类问题：** 如果一个 API 的官方说明包含 Server Components、server rendering、static API、development only、diagnostic、framework handles this for you，就先写 reading boundary。只有当项目真实引入相应 framework/runtime 后，才把它迁移为可执行 feature。
+
 <a id="section-9-13"></a>
 
 ### 9.13 SellerHub API gap mapping：哪些场景需要这些 API，哪些不需要
@@ -576,6 +713,20 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 
 **真实练习文件：** `13-sellerhub-api-gap-map/sellerhub-api-gap-map.tsx`。
 
+**边界示例：**
+
+| SellerHub problem | Correct API decision | Wrong decision |
+| --- | --- | --- |
+| Catalog search input is responsive but result rendering is heavy | `useDeferredValue` on query consumer | Debounce every keypress without measuring render cost |
+| Switching analytics panels feels janky | `useTransition` around panel update | Transition the controlled select value itself |
+| Inventory comes from browser/third-party mutable source | `useSyncExternalStore` | Copy external data into multiple component states with effects |
+| Help text and error text need stable associations | `useId` | Reuse hardcoded IDs or list keys |
+| Future RSC cache review | `cache` / `cacheSignal` reading boundary | Fake server cache inside Vite client |
+
+**执行过程：** 决策从 scenario 开始，而不是从 API 名开始；每个 scenario 先确定 owner，再确定 runtime layer，再选 API。这个 mapping 让 SellerHub review 能解释为什么某些 API 应该落地，为什么某些 API 只放在 architectural note 中。
+
+**识别同类问题：** 如果 review 只说“这里用了高级 API”，但不能说出 owner、runtime boundary、wrong alternative 和 observable evidence，就还没有达到本章目标。修正方式是把每个 API choice 写成 scenario-based decision row。
+
 <a id="section-9-14"></a>
 
 ### 9.14 最终小项目：SellerHub API Gap Lab
@@ -593,6 +744,19 @@ export function updateSnapshot(nextSnapshot: Snapshot) {
 7. 真实项目中，它对应的是“API gap review workspace”，不是 production SellerHub feature。
 
 **真实练习文件：** `sellerhub-api-gap-lab/` 下所有文件，详见第 12 节。
+
+**边界示例：**
+
+| Lab capability | Demonstrated mechanism | Boundary kept honest |
+| --- | --- | --- |
+| Deferred product search | urgent input vs deferred result rendering | 不声称减少 network requests |
+| External inventory store | stable snapshot and subscribe/unsubscribe | 不把 external mutable source 复制成多个 local states |
+| Accessible filter form | generated DOM association IDs | 不把 generated ID 当 list key |
+| API decision table | server/framework/diagnostic classification | 不执行 fake RSC cache 或 fake production diagnostics |
+
+**执行过程：** `Chapter17PracticeRoot` 组合分节 panels 和 final lab；final lab 只集成本章已经讲过的机制。用户交互触发各自 owner：search state、external store、generated ID、layout ref、style rule、imperative handle、effect event callback。每个 owner 都有自己的 boundary，避免把 escape hatch 合并成一个不透明 capstone。
+
+**识别同类问题：** 如果 final lab 增加新 API 但前面没有独立 `9.x` 解释，或把 boundary-only API 变成“已运行功能”，就违反本章修复目标。正确做法是先补分节教学，再让 final lab 只做整合。
 
 ## 10. API / 语法索引
 

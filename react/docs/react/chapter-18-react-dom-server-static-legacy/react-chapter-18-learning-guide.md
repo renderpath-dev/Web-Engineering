@@ -330,6 +330,15 @@ React DOM 是 React 针对 web browser DOM 的 renderer。React owner tree 解�
 
 把 React DOM 当成所有 React 平台都支持的 API 是错误的。React DOM 官方边界是 web apps running in browser DOM environment；React Native 没有 browser DOM container、`document.body` 或 DOM layout。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | “这个 component 在 DOM 里被 portal 移走了，所以 context owner 也变了。” | DOM placement 不等于 React owner tree；context/event/state 仍按 React tree 解释 |
+| Correct | “这个 node 放在 `document.body`，但它仍由原 component render，并读取原 provider context。” | React DOM renderer 只负责把 React output commit 到 browser DOM |
+
+**执行过程补充：** root container 是 React DOM 与 browser DOM 的接缝；root 以下的 component ownership 由 React fiber/owner relationship 描述，真实 node 的 focus、layout、paint 由 browser 描述。真实项目里同时打开 React DevTools tree 和 Elements panel，路径不同不是 bug，而是两层模型不同。
+
 <a id="section-9-2"></a>
 
 ### 9.2 createPortal：DOM 位置改变但 React owner tree 不变
@@ -349,6 +358,15 @@ React DOM 是 React 针对 web browser DOM 的 renderer。React owner tree 解�
 **可访问性边界：**
 
 Portal 解决的是 physical placement，不自动解决 focus management、escape key、aria relationship 或 background inertness。modal code review 仍要检查 `role="dialog"`、`aria-modal`、可聚焦 close button、初始 focus 和关闭后 focus restore。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 为 modal 调用 `createRoot(document.body).render(<Modal />)` | 第二个 root 会切断原 owner tree、provider 和 app state ownership |
+| Correct | 原 component 返回 `createPortal(<Dialog />, document.body)` | Portal 只改变 DOM target，不改变 React parent-child ownership |
+
+**执行过程补充：** click 打开 modal 后，`isOpen` state 仍属于 opener component；React reconciliation 仍处理 opener 的 returned children；commit 阶段把 dialog DOM 插入 portal target。事件从 portal child 回到 React owner path，所以 context、error boundary 和 event handler 仍按 React tree 工作。
 
 <a id="section-9-3"></a>
 
@@ -370,6 +388,15 @@ Portal 解决的是 physical placement，不自动解决 focus management、esca
 
 普通 React state update 允许 batching 和 scheduling；如果后续逻辑不依赖“马上可读的 DOM”，就不应该使用 `flushSync`。如果只是要根据 state 计算值，应回到 render snapshot、derived data 或 ref timing，而不是强制同步 DOM。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 所有 click handler 都写 `flushSync(() => setState(...))` | 破坏 React batching 和 scheduling，可能让 interaction 变慢 |
+| Correct | 只在“update 后马上调用 browser API 读取/滚动/测量新 DOM”时包住那个 update | `flushSync` 是 browser integration escape hatch，不是常规 render pattern |
+
+**执行过程补充：** `flushSync` callback 中的 setter 会被立即 flush；callback 返回后，DOM 已经包含新节点，handler 才读取 `ref.current`。如果后续逻辑只需要 next state value，应该通过 functional update、derived data 或 effect，而不是强迫 DOM commit。
+
 <a id="section-9-4"></a>
 
 ### 9.4 Resource Preloading APIs：preconnect、prefetchDNS、preload 与 preinit
@@ -389,6 +416,15 @@ React DOM resource preloading APIs 是资源提示（resource hint）边界。`p
 **与 Vite 的关系：**
 
 Vite 负责 module graph、dev server transform 和 production build chunks。Resource hints 只影响浏览器何时连接、下载或执行某个资源；它不会把一个 module 加进 Vite graph，也不会替你创建 route-level code split。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 用 `preload('/orders.json', { as: 'fetch' })` 代替 application data fetching lifecycle | resource hint 只提示 browser fetch，不建立 React request state、error state 或 cache ownership |
+| Correct | 对字体、style、script、module 等可预测资源使用 hint；业务数据仍用明确 request model | resource loading boundary 与 application data boundary 分离 |
+
+**执行过程补充：** hint API 返回 `void`；它不会返回 resource content，也不会让 component suspend。TypeScript 能检查 options，但真实效果要用 Network panel waterfall 或 server headers 检查。
 
 <a id="section-9-5"></a>
 
@@ -410,6 +446,15 @@ Vite 负责 module graph、dev server transform 和 production build chunks。Re
 
 多数业务组件不 import `createRoot` 或 `hydrateRoot`。它们只返回 JSX，由 root 或 framework 调用链负责最终渲染。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 在普通 feature component 内部调用 `createRoot` 来显示 tooltip | root API 是 entry/island ownership 边界，不是 child rendering 工具 |
+| Correct | 单入口 app 使用 `createRoot(container).render(<App />)`；hydrated app 使用 `hydrateRoot(container, <App />)` | root selection 由 HTML ownership 和 server markup 是否存在决定 |
+
+**执行过程补充：** `createRoot` 创建 root object 后，后续 unmount 也应由该 root object 执行；`hydrateRoot` 则要求 container 已经包含 React server/build 生成且可匹配的 DOM。没有 server markup 时使用 hydrate，会把 hydration boundary 教错。
+
 <a id="section-9-6"></a>
 
 ### 9.6 Hydration mismatch reading：server HTML、client render 与 DOM 接管
@@ -430,6 +475,15 @@ Hydration mismatch 意味着 server HTML 与第一次 client render 结果不一
 
 在 Vite client panel 中手写一个 HTML string 然后声称“这就是 SSR hydration”是错误教学。真实 hydration 需要 server/build 生成的 HTML、matching client component tree、bootstrap scripts 和 `hydrateRoot` entry。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | Shared render 中直接输出 `Date.now()`、`Math.random()` 或 browser-only storage value | 第一次 server HTML 与第一次 client render 必须 deterministic match |
+| Correct | Server 序列化稳定数据，或把 browser-only value 移到 client effect 后再显示 | Hydration 接管需要一致初始 tree；差异必须被隔离 |
+
+**执行过程补充：** server 输出 HTML 时没有 browser local state；client hydration 时如果第一次 render 读到另一个值，React 看到的 expected tree 与 existing DOM 不一致。TypeScript 对日期、随机数和 storage read 没有 mismatch 保护；识别信号是 hydration warning、client-only fallback 或 UI 首屏闪烁。
+
 <a id="section-9-7"></a>
 
 ### 9.7 renderToString / renderToStaticMarkup：blocking server HTML boundary
@@ -445,6 +499,15 @@ Hydration mismatch 意味着 server HTML 与第一次 client render 结果不一
 **真实练习：**
 
 `server-rendering-boundary-panel.tsx` 只解释 blocking server APIs，不执行 server render。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 在 browser component 中 `renderToString(<Card />)` 再塞进 `innerHTML`，并称为 SSR | SSR 是 server response ownership，不是 client-side string serialization |
+| Correct | 把 `renderToString` 放在 server route/build pipeline 中，并配合 document shell、scripts 和 hydration entry | server renderer 的输出必须由 HTTP/build owner 发送或保存 |
+
+**执行过程补充：** blocking server renderer 一次性返回 string；它不能等待 suspended data，也不能提供 streaming shell。真实项目若有 SSR，应检查 request path、headers、HTML shell、bootstrap script 和 hydrate root，而不是只看是否调用了 API。
 
 <a id="section-9-8"></a>
 
@@ -462,6 +525,15 @@ Hydration mismatch 意味着 server HTML 与第一次 client render 结果不一
 
 `server-streaming-boundary-panel.tsx` 把 Node stream 与 Web stream 分开展示，并说明当前 lab 只做 boundary map。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 在 client test 中 mock `onShellReady` 并宣称证明 streaming SSR | streaming SSR 需要 Node/Web stream response owner 和 browser hydration plan |
+| Correct | 在 guide 中作为 boundary reading；未来若引入 server，再用 server integration tests 验证 stream behavior | client-only Vite lab 不拥有 response headers、pipe、abort 和 bootstrap lifecycle |
+
+**执行过程补充：** streaming API 的关键 evidence 是 shell 何时 ready、error 如何处理、stream 如何 pipe、client 如何 hydrate Suspense boundary。没有这些 evidence，就只能是 architecture reading。
+
 <a id="section-9-9"></a>
 
 ### 9.9 Static APIs 与 resume boundary：prerender、resume 与 framework ownership
@@ -477,6 +549,15 @@ Hydration mismatch 意味着 server HTML 与第一次 client render 结果不一
 **真实练习：**
 
 `static-resume-boundary-panel.tsx` 只做 static/resume API reading，强调它不是 ordinary business component API。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 把 `prerender` 描述成 component-level performance hook | static API 发生在 build/server/framework pipeline，不发生在 normal client render |
+| Correct | 把 static/resume 写成 framework ownership、build artifact 和 hydration/resume plan 的阅读边界 | static output、postponed state 和 resume context 需要真实 pipeline |
+
+**执行过程补充：** static API 产物是 HTML/static stream/postponed state，而不是 JSX component 的 local state。识别信号是是否存在 route build step、artifact storage、cache invalidation 和 deployment path。
 
 <a id="section-9-10"></a>
 
@@ -494,6 +575,15 @@ React 19 删除或淘汰的 DOM/server APIs 必须按边界替换：`ReactDOM.re
 
 `removed-dom-api-migration-panel.tsx` 和 `removed-api-migration-table.tsx` 用表格把 removed API、replacement、owner boundary 和 migration guidance 放在一起。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 搜到 `ReactDOM.hydrate` 就统一替换成 `createRoot` | hydration root 和 client root 不是同一边界 |
+| Correct | 先判断旧入口是否有 server HTML；有则迁到 `hydrateRoot`，没有则迁到 `createRoot` | migration 要保留 root ownership semantics |
+
+**执行过程补充：** migration audit 先分组：client root、hydration root、explicit ref、server stream、static rendering。每组再查 tests 和 runtime evidence。这样能避免“能编译但 hydration 被破坏”的迁移。
+
 <a id="section-9-11"></a>
 
 ### 9.11 createElement、Children、cloneElement：element object 与 legacy composition
@@ -509,6 +599,15 @@ React 19 删除或淘汰的 DOM/server APIs 必须按边界替换：`ReactDOM.re
 **真实练习：**
 
 `legacy-element-composition-panel.tsx` 展示 `createElement`、`Children`、`cloneElement` 和 `isValidElement` 的 library boundary 读法。新业务代码优先考虑显式 props、render props、context 或 composition API。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | Feature component 用 `cloneElement(children, { onClick })` 给任意 child 注入业务行为 | prop source 变隐蔽，child contract 不可见，测试难定位 |
+| Correct | Library boundary 可在确认 `isValidElement(child)` 后窄范围 clone；业务 feature 优先显式 props 或 render prop | legacy element APIs 适合 library adapter，不适合普通 data flow |
+
+**执行过程补充：** JSX 创建 element object；`Children` 处理 opaque children；`cloneElement` 复制并合并 props，但不会调用 child component。真实项目里如果 bug 来自“child 收到的 prop 不知道从哪来”，优先检查 clone/injection boundary。
 
 <a id="section-9-12"></a>
 
@@ -526,6 +625,15 @@ Class component、`PureComponent`、`createRef` 和 `forwardRef` 仍然是读旧
 
 `class-ref-legacy-reader.tsx` 用小型 class/PureComponent/createRef panel 表示这些 API 的 reading boundary。
 
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | 为了现代化，一次性把 stable class library 重写成 hooks | migration 需要 behavior evidence；lifecycle side effects 和 public instance APIs 可能被破坏 |
+| Correct | 先写 characterization tests，再逐个迁移 state/lifecycle/ref consumers | legacy reading 的目标是降低风险，不是炫耀新语法 |
+
+**执行过程补充：** class instance 持有 `this.state`，function component 按 hook call position 持有 state cell；二者 runtime model 不同。TypeScript 可迁移类型，但不会自动迁移 lifecycle timing、instance method consumers 或 `PureComponent` shallow comparison 行为。
+
 <a id="section-9-13"></a>
 
 ### 9.13 isValidElement 与 library boundary：验证 React element 而不是业务数据
@@ -541,6 +649,16 @@ Class component、`PureComponent`、`createRef` 和 `forwardRef` 仍然是读旧
 **真实练习：**
 
 `valid-element-boundary-panel.tsx` 对 JSX element、`createElement` result、string node 和 array node 做 runtime distinction。
+
+**错误边界与修正：**
+
+| Form | Boundary Example | Rule |
+| --- | --- | --- |
+| Wrong | `isValidElement(MyComponent)` 期望 true | component function 是 callable value，不是已经创建的 React element object |
+| Correct | `isValidElement(<MyComponent />)` 或 `isValidElement(createElement(MyComponent))` | 只有 JSX/createElement 产物才是 React element |
+| Wrong | 用它验证 API payload shape | React element validation 不等于 business DTO validation | API payload 要用 runtime parser/type guard |
+
+**执行过程补充：** `isValidElement` 检查的是 React element object tag，不检查 renderability 的全部范围。字符串可以被 React render，但不是 element；DOM node 是 browser object，也不是 React element。识别信号是 library boundary 收到 `unknown` children 时需要判断 element object。
 
 <a id="section-9-14"></a>
 
@@ -558,6 +676,17 @@ SellerHub 场景里，DOM/server/legacy API 的正确问题不是“能不能用
 
 `sellerhub-dom-server-legacy-map.tsx` 和最终 lab 的 decision table 把 API 映射到 SellerHub 的具体场景。
 
+**错误边界与修正：**
+
+| SellerHub scenario | Wrong choice | Correct boundary |
+| --- | --- | --- |
+| Help desk modal escapes clipping | Create a second app root | Use portal under the existing owner tree |
+| Escalation note must scroll after insertion | `setTimeout` guess or global `flushSync` habit | Narrow `flushSync` only around the insertion |
+| Future SSR/static evaluation | Fake server APIs in the client lab | Keep server/static APIs as reading boundary until a real server/build owner exists |
+| Legacy plugin audit | Delete all legacy APIs blindly | Classify removed APIs, legacy adapters, and consumer contracts separately |
+
+**执行过程补充：** SellerHub review 先从 UI 问题或迁移问题出发，再映射到 DOM placement、root ownership、hydration/server/static ownership 或 legacy library ownership。同一个 API 是否正确，取决于当前问题的 owner evidence，而不是 API 名称本身。
+
 <a id="section-9-15"></a>
 
 ### 9.15 最终小项目：SellerHub DOM Boundary Lab
@@ -573,6 +702,16 @@ SellerHub 场景里，DOM/server/legacy API 的正确问题不是“能不能用
 **项目边界声明：**
 
 这个 lab 不创建真实 SSR server，不运行 React Server Components，不在浏览器中运行 `react-dom/server` streaming，不配置 static prerender/resume，不迁移到 Next.js。Legacy APIs 只用于阅读和迁移判断，不作为新业务代码首选模式。
+
+**错误边界与修正：**
+
+| Lab area | Wrong extension | Correct extension |
+| --- | --- | --- |
+| Portal modal | Treat portal as complete accessibility | Add focus restore, escape behavior, and inert/background review as separate accessibility work |
+| Server/static cards | Add fake SSR execution to pass a checkbox | Keep boundary reading unless a real server or static pipeline is introduced by a future task |
+| Legacy migration table | Delete old API examples because they are legacy | Keep examples as migration reading material while avoiding them in new feature code |
+
+**执行过程补充：** final lab 应证明边界分离：可运行的 client DOM 机制有 interactive UI 和 tests；server/static/legacy topics 只提供 boundary cards、migration tables 和 review criteria。如果未来任务引入真实 SSR，本章是 reading baseline，不是当前实现本身。
 
 ## 10. API / 语法索引
 
