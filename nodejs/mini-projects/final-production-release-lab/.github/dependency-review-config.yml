@@ -1,0 +1,8 @@
+fail-on-severity: high
+deny-licenses:
+  - AGPL-1.0-only
+  - AGPL-3.0-only
+comment-summary-in-pr: false
+allow-ghsas: []
+license-check: true
+vulnerability-check: true

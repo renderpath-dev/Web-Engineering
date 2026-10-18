@@ -1,0 +1,23 @@
+{
+  "releaseId": "release-local-example",
+  "createdAt": "2026-08-26T00:00:00.000Z",
+  "sourceRef": "placeholder-source-ref",
+  "packageLockHash": "placeholder-package-lock-sha256",
+  "dockerfileHash": "placeholder-dockerfile-sha256",
+  "workflowHash": "placeholder-workflow-sha256",
+  "k8sManifestHash": "placeholder-k8s-manifest-sha256",
+  "sbomPath": "release/sbom.cdx.json",
+  "sbomStatus": "UNKNOWN",
+  "auditStatus": "UNKNOWN",
+  "testStatus": "UNKNOWN",
+  "buildStatus": "UNKNOWN",
+  "smokeStatus": "UNKNOWN",
+  "securityCheckStatus": "UNKNOWN",
+  "releaseDecision": "hold",
+  "rollbackPlanPath": "release/rollback-plan.md",
+  "limitations": [
+    "Local evidence does not prove a real production deployment.",
+    "No image digest is recorded until an image is built and inspected.",
+    "No GitHub Actions runtime result exists until the workflow runs in GitHub."
+  ]
+}

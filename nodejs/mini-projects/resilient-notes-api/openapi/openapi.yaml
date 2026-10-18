@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Resilient Notes API
+  version: 1.0.0
+paths:
+  /health/live:
+    get:
+      responses:
+        "200":
+          description: Liveness response
+  /health/ready:
+    get:
+      responses:
+        "200":
+          description: Readiness response
+        "503":
+          description: Not ready response
+  /reliability/idempotent-operation:
+    post:
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Created or replayed operation
+        "409":
+          description: Idempotency conflict
+  /metrics:
+    get:
+      responses:
+        "200":
+          description: Prometheus metrics
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status, detail, instance, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string

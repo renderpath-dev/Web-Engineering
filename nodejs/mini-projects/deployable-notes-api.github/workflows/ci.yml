@@ -1,0 +1,66 @@
+name: deployable-notes-api-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: deployable_notes_api
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d deployable_notes_api"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/deployable_notes_api
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: ci-session-secret-with-32-characters
+      ALLOWED_ORIGINS: http://localhost:3000
+      TRUST_PROXY: "false"
+      COOKIE_SECURE: "false"
+    defaults:
+      run:
+        working-directory: mini-projects/deployable-notes-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: mini-projects/deployable-notes-api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Validate release artifact
+        run: npm run release:validate

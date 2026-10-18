@@ -31,6 +31,7 @@ export class SseRegistry {
 
   closeAll(): void {
     for (const connection of this.connections.values()) {
+      clearInterval(connection.heartbeat);
       connection.response.write(formatSseEvent({
         event: "server.shutdown",
         data: { reason: "Server shutdown" }

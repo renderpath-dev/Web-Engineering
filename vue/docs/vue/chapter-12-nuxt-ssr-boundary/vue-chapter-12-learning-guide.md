@@ -1719,8 +1719,13 @@ server 输出 fallback；browser mounted 后读取 viewport；resize listener �
   </div>
 
 ```ts
+export interface BrowserViewport {
+  readonly width: number;
+  readonly height: number;
+}
+
 export function useBrowserViewport() {
-  const viewport = ref(null);
+  const viewport = ref<BrowserViewport | null>(null);
 
   function updateViewport(): void {
     viewport.value = {
@@ -1729,16 +1734,25 @@ export function useBrowserViewport() {
     };
   }
 
-  onMounted(updateViewport);
+  onMounted(() => {
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+  });
 
-  return { viewport };
+  onBeforeUnmount(() => {
+    window.removeEventListener("resize", updateViewport);
+  });
+
+  return {
+    viewport,
+  };
 }
 ```
 </div>
 
 **逐行解释：**
 
-`ref(null)` 给 SSR 阶段一个稳定初始值。`window` 只在 `updateViewport` 中访问。`onMounted` 保证第一次调用发生在 browser。
+`ref<BrowserViewport | null>(null)` 给 TypeScript 完整的可能值集合：SSR 阶段是 `null`，browser mounted 后可以是 `{ width, height }`。`null` 是 SSR-safe initial value，因为 server render 不读取 browser viewport。`updateViewport` 中的 object assignment 在 `onMounted` 后执行，因此赋值给 `viewport.value` 是合法的。`window` 仍然只在 browser-only lifecycle 中读取。
 
 **执行过程：**
 

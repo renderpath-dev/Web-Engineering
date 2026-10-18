@@ -19,8 +19,7 @@ export function formatSseEvent(input: SseEvent): string {
     lines.push(`data: ${line}`);
   }
 
-  lines.push("");
-  return lines.join("\n");
+  return `${lines.join("\n")}\n\n`;
 }
 
 export function formatSseComment(comment: string): string {

@@ -1,0 +1,38 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3050"
+      API_ORIGIN: http://localhost:8080
+      RATE_LIMIT_WINDOW_MS: "60000"
+      RATE_LIMIT_MAX: "120"
+      RELEASE_ENVIRONMENT: local-compose
+      RELEASE_OWNER: local-release-owner
+      RELEASE_VERSION: 1.0.0
+      COMMIT_SHA: placeholder-commit-sha
+      BUILD_ID: placeholder-build-id
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3050/v1/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+  nginx:
+    image: nginx:1.29-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy

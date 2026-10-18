@@ -1,0 +1,628 @@
+openapi: 3.1.1
+info:
+  title: Contract Governed Notes API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Health
+  - name: Observability
+  - name: Auth
+  - name: Notebooks
+  - name: Notes
+  - name: Contracts
+  - name: Version
+paths:
+  /v1/health/live:
+    get:
+      operationId: getLiveHealth
+      tags: [Health]
+      summary: Live health
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/health/ready:
+    get:
+      operationId: getReadyHealth
+      tags: [Health]
+      summary: Ready health
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/metrics:
+    get:
+      operationId: getMetrics
+      tags: [Observability]
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: Metrics payload
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/auth/register:
+    post:
+      operationId: registerUser
+      tags: [Auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/auth/login:
+    post:
+      operationId: loginUser
+      tags: [Auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [Auth]
+      summary: Logout user
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [Auth]
+      summary: Current user
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/auth/csrf:
+    get:
+      operationId: getCsrfToken
+      tags: [Auth]
+      summary: CSRF token
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/notebooks:
+    get:
+      operationId: listNotebooks
+      tags: [Notebooks]
+      summary: List notebooks
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    post:
+      operationId: createNotebook
+      tags: [Notebooks]
+      summary: Create notebook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotebookWrite'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/notebooks/{notebookId}:
+    get:
+      operationId: getNotebookById
+      tags: [Notebooks]
+      summary: Get notebook
+      parameters:
+        - $ref: '#/components/parameters/NotebookId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    patch:
+      operationId: updateNotebookById
+      tags: [Notebooks]
+      summary: Update notebook
+      parameters:
+        - $ref: '#/components/parameters/NotebookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotebookWrite'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    delete:
+      operationId: deleteNotebookById
+      tags: [Notebooks]
+      summary: Delete notebook
+      parameters:
+        - $ref: '#/components/parameters/NotebookId'
+      responses:
+        '204':
+          description: No content
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/notebooks/{notebookId}/notes:
+    get:
+      operationId: listNotebookNotes
+      tags: [Notes]
+      summary: List notes
+      parameters:
+        - $ref: '#/components/parameters/NotebookId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    post:
+      operationId: createNotebookNote
+      tags: [Notes]
+      summary: Create note
+      parameters:
+        - $ref: '#/components/parameters/NotebookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotebookWrite'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/notes/{noteId}:
+    get:
+      operationId: getNoteById
+      tags: [Notes]
+      summary: Get note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    patch:
+      operationId: updateNoteById
+      tags: [Notes]
+      summary: Update note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteWrite'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+    delete:
+      operationId: deleteNoteById
+      tags: [Notes]
+      summary: Delete note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      responses:
+        '204':
+          description: No content
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/contracts/openapi.yaml:
+    get:
+      operationId: getOpenApiYaml
+      tags: [Contracts]
+      summary: OpenAPI YAML
+      responses:
+        '200':
+          description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /v1/contracts/route-inventory:
+    get:
+      operationId: getRouteInventory
+      tags: [Contracts]
+      summary: Route inventory
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/contracts/compatibility-report:
+    get:
+      operationId: getCompatibilityReport
+      tags: [Contracts]
+      summary: Compatibility report
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/version:
+    get:
+      operationId: getVersion
+      tags: [Version]
+      summary: Version metadata
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/ProblemResponse'
+        '401':
+          $ref: '#/components/responses/ProblemResponse'
+        '404':
+          $ref: '#/components/responses/ProblemResponse'
+  /v1/deprecated-demo:
+    get:
+      operationId: getDeprecatedDemo
+      tags: [Version]
+      summary: Deprecated demo
+      deprecated: true
+      responses:
+        '200':
+          description: Deprecated response
+          headers:
+            Deprecation:
+              $ref: '#/components/headers/Deprecation'
+            Sunset:
+              $ref: '#/components/headers/Sunset'
+            Link:
+              $ref: '#/components/headers/Link'
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: contract_notes_session
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: x-csrf-token
+  parameters:
+    NotebookId:
+      name: notebookId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NoteId:
+      name: noteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  headers:
+    Deprecation:
+      description: Signals that an operation is deprecated.
+      schema:
+        type: string
+    Sunset:
+      description: HTTP-date after which the operation may stop responding.
+      schema:
+        type: string
+    Link:
+      description: Link relation for replacement or successor information.
+      schema:
+        type: string
+  responses:
+    ProblemResponse:
+      description: RFC 9457 problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            validation:
+              value:
+                type: https://api.example.test/problems/validation_failed
+                title: Validation failed
+                status: 400
+                detail: Request did not match the public contract.
+                code: validation_failed
+  schemas:
+    AuthRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    NotebookWrite:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+    NoteWrite:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 20000
+    ProblemDetails:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+    Notebook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notebookId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    NotebookList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notebook'
+        nextCursor:
+          type: [string, 'null']
+        limit:
+          type: integer
+    NoteList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        nextCursor:
+          type: [string, 'null']
+        limit:
+          type: integer
+    CompatibilityReport:
+      type: object
+      properties:
+        cases:
+          type: array
+          items:
+            type: object
+        summary:
+          type: object

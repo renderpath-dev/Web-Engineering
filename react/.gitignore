@@ -19,9 +19,18 @@ references/books/**/*.pdf
 .vscode/*
 !.vscode/extensions.json
 .idea
+.vs
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Local tool state
+.codex
+.playwright-cli
+tmp
+
+# Local nested projects
+mern-employee-salary-management/

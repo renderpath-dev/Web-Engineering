@@ -1,0 +1,51 @@
+{
+  "name": "resilient-notes-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/env.unit.test.ts tests/problem-details.unit.test.ts tests/retry-policy.unit.test.ts tests/timeout-abort.unit.test.ts tests/idempotency.unit.test.ts tests/circuit-breaker.unit.test.ts tests/bulkhead.unit.test.ts tests/health.integration.test.ts tests/idempotency.integration.test.ts tests/reliability.integration.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "seed": "prisma db seed",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "reliability:check": "tsx scripts/reliability-check.ts",
+    "fault:check": "tsx scripts/fault-injection-check.ts",
+    "idempotency:check": "tsx scripts/idempotency-check.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "helmet": "^8.3.0",
+    "pg": "^8.22.0",
+    "pino": "^10.3.1",
+    "prom-client": "^15.1.3",
+    "redis": "^6.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.1",
+    "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

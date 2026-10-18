@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: Performance Notes API
+  version: 1.0.0
+paths:
+  /health/live:
+    get:
+      responses:
+        "200":
+          description: Live process signal
+  /health/ready:
+    get:
+      responses:
+        "200":
+          description: Ready dependency signal
+        "503":
+          description: Dependency unavailable
+  /metrics:
+    get:
+      responses:
+        "200":
+          description: Prometheus metrics
+  /performance/event-loop:
+    get:
+      responses:
+        "200":
+          description: Event loop performance snapshot
+  /performance/memory:
+    get:
+      responses:
+        "200":
+          description: Safe memory snapshot
+  /performance/cpu-sync:
+    get:
+      responses:
+        "200":
+          description: Bounded sync CPU demo
+  /performance/cpu-worker:
+    get:
+      responses:
+        "200":
+          description: Bounded worker CPU demo
+  /performance/stream-report:
+    get:
+      responses:
+        "200":
+          description: Stream backpressure report
+  /performance/redis-pipeline-demo:
+    get:
+      responses:
+        "200":
+          description: Redis pipeline demo
+  /performance/query-summary:
+    get:
+      responses:
+        "200":
+          description: Query metrics summary

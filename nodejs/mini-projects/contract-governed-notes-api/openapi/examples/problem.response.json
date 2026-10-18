@@ -1,0 +1,7 @@
+{
+  "type": "https://api.example.test/problems/validation_failed",
+  "title": "Validation failed",
+  "status": 400,
+  "detail": "Request did not match the public contract.",
+  "code": "validation_failed"
+}

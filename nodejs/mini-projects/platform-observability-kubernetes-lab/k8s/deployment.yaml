@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-observability-kubernetes-lab-api
+  namespace: platform-observability-kubernetes-lab
+  labels:
+    app.kubernetes.io/name: platform-observability-kubernetes-lab
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: platform-observability-kubernetes-lab
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: platform-observability-kubernetes-lab
+        app.kubernetes.io/component: api
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: example.com/platform-observability-kubernetes-lab-api:replace-me
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3040
+          envFrom:
+            - configMapRef:
+                name: platform-observability-kubernetes-lab-config
+            - secretRef:
+                name: platform-observability-kubernetes-lab-secret
+          livenessProbe:
+            httpGet:
+              path: /v1/health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /v1/health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /v1/health/startup
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

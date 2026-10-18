@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+release/sbom.cdx.json
+release/release-manifest.generated.json
+*.log

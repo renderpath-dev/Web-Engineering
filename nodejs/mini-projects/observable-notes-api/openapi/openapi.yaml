@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: Observable Notes API
+  version: 1.0.0
+paths:
+  /auth/register:
+    post:
+      summary: Register a user and create a session
+      responses:
+        "201":
+          description: Registered
+  /auth/login:
+    post:
+      summary: Create a session
+      responses:
+        "200":
+          description: Logged in
+  /auth/logout:
+    post:
+      summary: Delete the current session
+      responses:
+        "200":
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Read the current user
+      responses:
+        "200":
+          description: Current user
+  /auth/csrf:
+    get:
+      summary: Rotate and return a CSRF token
+      responses:
+        "200":
+          description: CSRF token
+  /notebooks:
+    get:
+      summary: List notebooks
+      responses:
+        "200":
+          description: Notebook list
+    post:
+      summary: Create a notebook
+      responses:
+        "201":
+          description: Notebook created
+  /notebooks/{notebookId}:
+    get:
+      summary: Read one notebook
+      responses:
+        "200":
+          description: Notebook
+    patch:
+      summary: Update one notebook
+      responses:
+        "200":
+          description: Notebook updated
+    delete:
+      summary: Delete one notebook
+      responses:
+        "200":
+          description: Notebook deleted
+  /notebooks/{notebookId}/notes:
+    get:
+      summary: List notes in a notebook
+      responses:
+        "200":
+          description: Note list
+    post:
+      summary: Create a note in a notebook
+      responses:
+        "201":
+          description: Note created
+  /notes/{noteId}:
+    get:
+      summary: Read one note
+      responses:
+        "200":
+          description: Note
+    patch:
+      summary: Update one note
+      responses:
+        "200":
+          description: Note updated
+    delete:
+      summary: Delete one note
+      responses:
+        "200":
+          description: Note deleted
+  /health/live:
+    get:
+      summary: Check process liveness
+      responses:
+        "200":
+          description: Process is live
+  /health/ready:
+    get:
+      summary: Check dependency readiness
+      responses:
+        "200":
+          description: Dependencies are ready
+        "503":
+          description: One or more dependencies are unavailable
+  /metrics:
+    get:
+      summary: Expose Prometheus metrics text
+      responses:
+        "200":
+          description: Metrics text

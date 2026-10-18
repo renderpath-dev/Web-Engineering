@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: deployable_notes_api
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - deployable-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d deployable_notes_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      PORT: 3020
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/deployable_notes_api
+      REDIS_URL: redis://redis:6379
+      SESSION_COOKIE_NAME: deployable_notes_session
+      SESSION_SECRET: local-compose-session-secret-32chars
+      SESSION_TTL_SECONDS: 604800
+      CSRF_COOKIE_NAME: deployable_notes_csrf
+      ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      TRUST_PROXY: "true"
+      COOKIE_SECURE: "false"
+      LOG_LEVEL: info
+      SHUTDOWN_TIMEOUT_MS: 10000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3020/health/live').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  nginx:
+    image: nginx:1.29-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  deployable-postgres-data:

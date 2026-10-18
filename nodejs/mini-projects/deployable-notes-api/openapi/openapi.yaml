@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: deployable-notes-api
+  version: 1.0.0
+paths:
+  /auth/register:
+    post:
+      summary: Register a user and create a session.
+      responses:
+        "201":
+          description: Registered
+  /auth/login:
+    post:
+      summary: Create a session.
+      responses:
+        "200":
+          description: Logged in
+  /auth/logout:
+    post:
+      summary: Revoke the current session.
+      responses:
+        "200":
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Read the current authenticated user.
+      responses:
+        "200":
+          description: Current user
+  /auth/csrf:
+    get:
+      summary: Rotate the CSRF token for the current session.
+      responses:
+        "200":
+          description: CSRF token
+  /notebooks:
+    get:
+      summary: List notebooks.
+      responses:
+        "200":
+          description: Notebook list
+    post:
+      summary: Create a notebook.
+      responses:
+        "201":
+          description: Created notebook
+  /notebooks/{notebookId}:
+    get:
+      summary: Get a notebook.
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notebook
+    patch:
+      summary: Update a notebook.
+      responses:
+        "200":
+          description: Updated notebook
+    delete:
+      summary: Delete a notebook.
+      responses:
+        "200":
+          description: Deleted notebook
+  /notebooks/{notebookId}/notes:
+    get:
+      summary: List notes in a notebook.
+      responses:
+        "200":
+          description: Note list
+    post:
+      summary: Create a note in a notebook.
+      responses:
+        "201":
+          description: Created note
+  /notes/{noteId}:
+    get:
+      summary: Get a note.
+      responses:
+        "200":
+          description: Note
+    patch:
+      summary: Update a note.
+      responses:
+        "200":
+          description: Updated note
+    delete:
+      summary: Delete a note.
+      responses:
+        "200":
+          description: Deleted note
+  /health/live:
+    get:
+      summary: Liveness endpoint.
+      responses:
+        "200":
+          description: Live
+  /health/ready:
+    get:
+      summary: Readiness endpoint.
+      responses:
+        "200":
+          description: Ready
+        "503":
+          description: Not ready
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint.
+      responses:
+        "200":
+          description: Metrics

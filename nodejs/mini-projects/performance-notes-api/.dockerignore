@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+*.log
+logs
+.env
+.env.*
+coverage
+docs
+dist
+.git
+.github
+secrets
+*.pem
+*.key
+diagnostic-reports
+tmp

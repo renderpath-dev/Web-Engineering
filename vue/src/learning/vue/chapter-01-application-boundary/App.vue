@@ -18,6 +18,12 @@ import TestingQualityChapterApp from "../chapter-10-testing-quality/TestingQuali
 import ProductionDeploymentChapterApp from "../chapter-11-production-deployment/ProductionDeploymentChapterApp.vue";
 import NuxtSsrBoundaryChapterApp from "../chapter-12-nuxt-ssr-boundary/NuxtSsrBoundaryChapterApp.vue";
 import NuxtAdvancedProductionChapterApp from "../chapter-13-nuxt-advanced-production/NuxtAdvancedProductionChapterApp.vue";
+import MigrationModernizationChapterApp from "../chapter-14-migration-modernization/MigrationModernizationChapterApp.vue";
+import AccessibilityResponsiveChapterApp from "../chapter-15-accessibility-responsive/AccessibilityResponsiveChapterApp.vue";
+import SecurityBoundaryChapterApp from "../chapter-16-security-boundary/SecurityBoundaryChapterApp.vue";
+import ObservabilityIncidentChapterApp from "../chapter-17-observability-incident/ObservabilityIncidentChapterApp.vue";
+import DesignSystemLibraryChapterApp from "../chapter-18-design-system-library/DesignSystemLibraryChapterApp.vue";
+import MonorepoReleaseChapterApp from "../chapter-19-monorepo-release/MonorepoReleaseChapterApp.vue";
 </script>
 
 <template>
@@ -96,6 +102,30 @@ import NuxtAdvancedProductionChapterApp from "../chapter-13-nuxt-advanced-produc
     <div class="chapter-divider" role="separator"></div>
 
     <NuxtAdvancedProductionChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <MigrationModernizationChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <AccessibilityResponsiveChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <SecurityBoundaryChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <ObservabilityIncidentChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <DesignSystemLibraryChapterApp />
+
+    <div class="chapter-divider" role="separator"></div>
+
+    <MonorepoReleaseChapterApp />
   </main>
 </template>
 

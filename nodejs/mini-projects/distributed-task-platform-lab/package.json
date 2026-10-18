@@ -1,0 +1,57 @@
+{
+  "name": "distributed-task-platform-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "tsx watch src/api/server.ts",
+    "dev:worker": "tsx watch src/worker/worker.ts",
+    "build": "tsc -p tsconfig.json",
+    "start:api": "node dist/src/api/server.js",
+    "start:worker": "node dist/src/worker/worker.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/env.unit.test.ts tests/service-boundary.unit.test.ts tests/job-contract.unit.test.ts tests/idempotency.unit.test.ts tests/retry-policy.unit.test.ts tests/cache-consistency.unit.test.ts tests/worker.unit.test.ts tests/api.integration.test.ts tests/queue.integration.test.ts tests/cache.integration.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "seed": "prisma db seed",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "queue:check": "tsx scripts/queue-check.ts",
+    "worker:check": "tsx scripts/worker-check.ts",
+    "cache:check": "tsx scripts/cache-check.ts",
+    "consistency:check": "tsx scripts/consistency-check.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bullmq": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
+    "pg": "^8.22.0",
+    "pino": "^10.3.1",
+    "prom-client": "^15.1.3",
+    "redis": "^6.1.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.1",
+    "prisma": "^7.9.1",
+    "supertest": "^7.2.2",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

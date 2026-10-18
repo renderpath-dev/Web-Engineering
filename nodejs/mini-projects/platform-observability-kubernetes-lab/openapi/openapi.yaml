@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: Platform Observability Kubernetes Lab API
+  version: 1.0.0
+paths:
+  /v1/health/live:
+    get:
+      operationId: getLiveHealth
+      responses:
+        "200":
+          description: Live process status
+  /v1/health/ready:
+    get:
+      operationId: getReadyHealth
+      responses:
+        "200":
+          description: Dependency readiness passed
+        "503":
+          description: Dependency readiness failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /v1/health/startup:
+    get:
+      operationId: getStartupHealth
+      responses:
+        "200":
+          description: Startup probe status
+  /v1/metrics:
+    get:
+      operationId: getPrometheusMetrics
+      responses:
+        "200":
+          description: Prometheus exposition text
+  /v1/simulate/ok:
+    get:
+      operationId: simulateOk
+      responses:
+        "200":
+          description: Successful signal
+  /v1/simulate/error:
+    get:
+      operationId: simulateError
+      responses:
+        "503":
+          description: Simulated error signal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /v1/simulate/slow:
+    get:
+      operationId: simulateSlow
+      responses:
+        "200":
+          description: Slow request signal
+  /v1/simulate/event-loop-delay:
+    get:
+      operationId: simulateEventLoopDelay
+      responses:
+        "200":
+          description: Event loop delay signal
+  /v1/simulate/trace-work:
+    post:
+      operationId: simulateTraceWork
+      responses:
+        "200":
+          description: Manual trace work result
+  /v1/slo/policy:
+    get:
+      operationId: getSloPolicy
+      responses:
+        "200":
+          description: Local SLO policy
+  /v1/slo/report:
+    get:
+      operationId: getSloReport
+      responses:
+        "200":
+          description: Local SLO report
+  /v1/platform/runbook:
+    get:
+      operationId: getPlatformRunbook
+      responses:
+        "200":
+          description: Runbook entries
+  /v1/platform/kubernetes-model:
+    get:
+      operationId: getKubernetesModel
+      responses:
+        "200":
+          description: Static Kubernetes model
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string

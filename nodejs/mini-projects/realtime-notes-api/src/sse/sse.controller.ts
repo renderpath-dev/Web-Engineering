@@ -24,6 +24,14 @@ export const connectUserEvents: RequestHandler = async (request, response, next)
 
     const connectionId = randomUUID();
     const heartbeat = startSseHeartbeat(response);
+
+    const cleanup = (): void => {
+      stopSseHeartbeat(heartbeat);
+      sseRegistry.remove(connectionId);
+    };
+
+    request.once("close", cleanup);
+
     sseRegistry.add({ connectionId, userId: auth.userId, response, heartbeat });
 
     response.write(formatSseEvent({ event: "connection.ready", data: { connectionId } }));
@@ -32,28 +40,31 @@ export const connectUserEvents: RequestHandler = async (request, response, next)
     for (const event of replayEvents) {
       response.write(formatStoredRealtimeEvent(event));
     }
-
-    request.on("close", () => {
-      stopSseHeartbeat(heartbeat);
-      sseRegistry.remove(connectionId);
-    });
   } catch (error) {
     next(error);
   }
 };
 
 export const connectNoteEvents: RequestHandler = async (request, response, next) => {
-      try {
-        const auth = requireAuthContext(response);
-        const noteId = String(request.params.noteId);
-        const note = await findNoteById(noteId);
-        if (!note) throw new HttpError(404, "Note was not found.", "NOTE_NOT_FOUND");
-        requireOwner(note.ownerId, auth.userId);
+  try {
+    const auth = requireAuthContext(response);
+    const noteId = String(request.params.noteId);
+    const note = await findNoteById(noteId);
+    if (!note) throw new HttpError(404, "Note was not found.", "NOTE_NOT_FOUND");
+    requireOwner(note.ownerId, auth.userId);
 
     prepareSseResponse(response);
 
     const connectionId = randomUUID();
     const heartbeat = startSseHeartbeat(response);
+
+    const cleanup = (): void => {
+      stopSseHeartbeat(heartbeat);
+      sseRegistry.remove(connectionId);
+    };
+
+    request.once("close", cleanup);
+
     sseRegistry.add({ connectionId, userId: auth.userId, noteId: note.id, response, heartbeat });
 
     response.write(formatSseEvent({ event: "connection.ready", data: { connectionId } }));
@@ -62,11 +73,6 @@ export const connectNoteEvents: RequestHandler = async (request, response, next)
     for (const event of replayEvents) {
       response.write(formatStoredRealtimeEvent(event));
     }
-
-    request.on("close", () => {
-      stopSseHeartbeat(heartbeat);
-      sseRegistry.remove(connectionId);
-    });
   } catch (error) {
     next(error);
   }

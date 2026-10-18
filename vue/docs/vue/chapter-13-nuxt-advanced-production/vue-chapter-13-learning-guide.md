@@ -1,12 +1,62 @@
 # Vue 第 13 章：Nuxt Advanced Modules、Content、Image、Auth Session、Layers 与 Production-grade Patterns
 
-本章文档服务于当前仓库的 Chapter 13 实作：
+<style>
+.macos-code-window {
+  margin: 1.25rem 0;
+  overflow: hidden;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  background: #0d1117;
+}
 
-- 根 Vite 学习面板：`src/learning/vue/chapter-13-nuxt-advanced-production/`
-- 独立 Nuxt lab：`nuxt-labs/chapter-13-nuxt-advanced-production-lab/`
-- 根应用入口：`src/learning/vue/chapter-01-application-boundary/App.vue`
+.macos-code-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  background: #21262d;
+}
 
-本地 roadmap 的 Phase 13 当前主题是迁移、维护与架构重构；本附件任务要求的是 Nuxt advanced production patterns。这里按附件创建 Chapter 13，但把 Nuxt app 放在独立 lab 中，避免把根 Vite 学习壳迁移成 Nuxt。
+.macos-code-dot,
+.macos-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.macos-code-dot-red,
+.macos-dot.red {
+  background: #ff5f57;
+}
+
+.macos-code-dot-yellow,
+.macos-dot.yellow {
+  background: #febc2e;
+}
+
+.macos-code-dot-green,
+.macos-dot.green {
+  background: #28c840;
+}
+
+.macos-code-title {
+  margin-left: 6px;
+  color: #c9d1d9;
+  font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.macos-code-titlebar + pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.macos-code-titlebar + pre code {
+  display: block;
+  padding: 1rem;
+}
+</style>
 
 ## 目录
 
@@ -17,9 +67,9 @@
 - [3. 本章运行范围](#3-本章运行范围)
 - [4. 核心机制证据链总览](#4-核心机制证据链总览)
 - [5. 运行机制总览](#5-运行机制总览)
-- [6. 文件结构](#6-文件结构)
+- [6. Nuxt advanced 运行时所有权图](#6-nuxt-advanced-运行时所有权图)
 - [7. 代码窗口格式约定](#7-代码窗口格式约定)
-- [8. 学习路线](#8-学习路线)
+- [8. Advanced capability 执行路径](#8-advanced-capability-执行路径)
 - [9. 分节教学与练习](#9-分节教学与练习)
   - [9.1 Advanced Nuxt mental model：module、content、image、session、layer、test 与 production readiness](#section-9-1)
   - [9.2 Module selection boundary：Nuxt modules、runtime behavior、dependency cost 与 no random modules](#section-9-2)
@@ -124,20 +174,22 @@
 
 一次 content page 的完整链路是：Markdown 文件进入 Content collection，Nuxt Content 在 build/dev 阶段生成 query 能力，page 通过 `queryCollection` 拉取 entry，`ContentRenderer` 渲染 body，SEO meta 从 page setup 设置，routeRules 决定 docs routes 的 prerender 策略。
 
-## 6. 文件结构
+## 6. Nuxt advanced 运行时所有权图
 
-本章文件结构按运行边界拆分：
+本节不按目录罗列文件，而是按 runtime boundary 判断谁拥有能力、谁不能越权、失败时应观察什么信号。
 
-- `app/pages/`：URL-owned pages。
-- `app/components/`：可复用 UI。
-- `app/composables/`：client/runtime composition state。
-- `app/middleware/`：page navigation UX guard。
-- `server/api/`：Nitro API routes。
-- `server/utils/`：server-only validation、authorization、mock data。
-- `shared/types/`：client/server 可共享类型。
-- `content/`：content-owned Markdown。
-- `layers/base-ui/`：local layer。
-- `tests/`：validation evidence。
+| Owner | Runtime boundary | What it may own | What it must not own | Failure signal |
+| --- | --- | --- | --- | --- |
+| `nuxt.config.ts` | Nuxt build/runtime config boundary | module registration、routeRules、private/public runtime config、image provider、local layer extension | page business decision、server authorization result、content document body | module added but no route, output, image, content, session, or test evidence uses it |
+| `content/` | Nuxt Content source boundary | docs/blog Markdown source data and frontmatter | Vue component state, server session, or authorization policy | content exists but route query returns not found or schema fields drift |
+| `app/pages/docs/` and `app/pages/blog/` | URL rendering boundary | content-driven routes, slug handling, page rendering, SEO/prerender connection | raw content ownership or server-only permission checks | docs/blog page works in dev but fails in generate or preview |
+| `app/pages/gallery/` and image components | Browser rendering plus Nuxt Image boundary | `NuxtImg` / `NuxtPicture` props, responsive sizes, provider URL rendering, layout stability evidence | image provider infrastructure or unrelated API state | image appears but dimensions, lazy behavior, provider URL, or CLS evidence is missing |
+| `server/api/auth/` | Nitro server authority boundary | login, logout, session read, unknown body parsing, safe session payload, sealed cookie writes | client-only token trust or unsafe user field exposure | invalid body accepted, password returned, cookie not set, or logout leaves session active |
+| `server/api/account/` and `server/api/admin/` | Protected server data boundary | `requireUserSession`, role checks, 401/403/200 response authority | trusting page middleware or browser-hidden UI as security | hidden page still allows private API data |
+| `app/middleware/` | Client navigation UX boundary | redirect hints, dashboard/admin navigation flow, user-facing route experience | security guarantee or private data protection | API remains readable when only page middleware blocks navigation |
+| `layers/base-ui/` | Nuxt layer scan/merge boundary | reusable Nuxt app files, shared components, composables, and local config defaults | product permission policy or app-specific server secrets | layer override changes UI unexpectedly or hides business behavior |
+| `tests/` | Validation evidence boundary | server route tests, page smoke tests, validation tests, readiness checks | production authority by itself | build passes but content/session/image/layer behavior is untested |
+| `shared/types/` | TypeScript compile-time contract boundary | shared payload shapes, API result types, auth/session types | runtime validation or authorization decisions | typecheck passes while malformed runtime input still reaches server logic |
 
 ## 7. 代码窗口格式约定
 
@@ -152,9 +204,18 @@ export const codeWindowRule = "titlebar-before-fenced-code";
 
 </div>
 
-## 8. 学习路线
+## 8. Advanced capability 执行路径
 
-先看 `nuxt.config.ts`，确认 module、layer、routeRules、runtime config。然后看 content pages 与 gallery pages，理解文件数据源和 image provider。再看 auth server routes 与 protected server routes，确认 authority 在 server。最后看 tests、build、generate、preview，确认 learning code 能被工程命令验证。
+本章按可观察执行链理解 advanced capability，而不是按阅读顺序记忆文件。
+
+| Path | Trigger | Runtime owner | Observable result | Failure signal |
+| --- | --- | --- | --- | --- |
+| Content path | `content/*.md -> content collection -> queryCollection -> page render -> SEO/prerender output` | `content/` source, Content collection, docs/blog page setup, routeRules | docs/blog URL renders collection data and keeps SEO/prerender evidence connected | Markdown exists but slug lookup, meta, generate, or preview fails |
+| Image path | `gallery API/metadata -> NuxtImg/NuxtPicture -> provider URL -> browser image request -> layout stability/performance evidence` | gallery API/page, Nuxt Image component, image provider config, browser layout engine | rendered image URL, dimensions, lazy loading, and stable layout can be inspected | image is visible but provider URL, dimensions, cache, or CLS evidence is missing |
+| Auth/session path | `login form -> server/api/auth/login.post.ts -> unknown body -> Zod parse -> setUserSession -> sealed cookie -> session.get/profile/report` | login form UX, Nitro auth route, Zod schema, session utility, protected server routes | valid login sets sealed cookie and later session/account/admin requests see safe user data | invalid body accepted, secret leaks, password returns, or session is not cleared |
+| Protected data path | `browser request -> cookie -> requireUserSession -> role check -> 401/403/200` | Nitro server route and authorization utility | anonymous request receives 401, signed-in non-admin receives 403, admin receives 200 | UI route guard hides page but API still returns protected data |
+| Layer path | `extends -> layer files scanned -> component/composable available -> override priority` | Nuxt layer scanner and app merge priority | base UI component/composable is available without duplicating app code | layer silently overrides app behavior or carries business policy |
+| Test/build path | `prepare/typecheck/test/build/generate/preview -> evidence for module/content/image/session/layer readiness` | Nuxt type generation, test runner, Nitro/Vite build, prerender/preview output | commands produce evidence that advanced features survive non-dev execution | only dev server works, while tests, build, generate, or preview expose missing runtime assumptions |
 
 ## 9. 分节教学与练习
 

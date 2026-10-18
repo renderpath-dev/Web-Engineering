@@ -5,7 +5,7 @@ type SseEvent = {
   data: unknown;
 };
 
-function formatSseEvent(input: SseEvent): string {
+export function formatSseEvent(input: SseEvent): string {
   const lines: string[] = [];
   if (input.id) lines.push(`id: ${input.id}`);
   if (input.event) lines.push(`event: ${input.event}`);
@@ -16,8 +16,7 @@ function formatSseEvent(input: SseEvent): string {
     lines.push(`data: ${line}`);
   }
 
-  lines.push("");
-  return lines.join("\n");
+  return `${lines.join("\n")}\n\n`;
 }
 
 console.log(formatSseEvent({ id: "123", event: "note.updated", data: { noteId: "n1" } }));

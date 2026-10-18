@@ -1,0 +1,57 @@
+name: final-production-release-lab-ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: quality-gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Human-readable source: actions/checkout@v4.2.2
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Use Node.js 26
+        run: |
+          node --version
+          npm --version
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test -- --test-concurrency=1
+
+      - name: Static workflow security check
+        run: npm run workflow:check
+
+      - name: Dependency policy check
+        run: npm run dependency:check
+
+      - name: Secret policy check
+        run: npm run secret:check
+
+      - name: Docker hardening policy check
+        run: npm run docker:check
+
+      - name: Kubernetes security policy check
+        run: npm run k8s:security:check
+
+      - name: Release policy check
+        run: npm run release:check

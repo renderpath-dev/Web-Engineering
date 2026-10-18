@@ -1,0 +1,31 @@
+{
+  "service": "final-production-release-lab",
+  "releaseGate": {
+    "requiredSignals": [
+      "typecheck",
+      "build",
+      "test",
+      "audit",
+      "secret-scan",
+      "workflow-security",
+      "docker-hardening",
+      "kubernetes-security",
+      "smoke",
+      "slo-continuity",
+      "manual-review"
+    ],
+    "criticalSignals": [
+      "audit",
+      "secret-scan",
+      "workflow-security",
+      "smoke"
+    ],
+    "unknownPolicy": "hold",
+    "localEvidencePolicy": "local-only-does-not-equal-production"
+  },
+  "rollback": {
+    "postReleaseSmokeFailure": "rollback",
+    "criticalSecurityFailure": "rollback",
+    "missingPreReleaseEvidence": "hold"
+  }
+}

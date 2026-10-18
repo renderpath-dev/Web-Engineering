@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: resilient_notes_api
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - resilient-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d resilient_notes_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      PORT: 3020
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/resilient_notes_api
+      REDIS_URL: redis://redis:6379
+      SESSION_COOKIE_NAME: resilient_notes_session
+      SESSION_SECRET: local-compose-session-secret-32chars
+      SESSION_TTL_SECONDS: 604800
+      CSRF_COOKIE_NAME: resilient_notes_csrf
+      ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      TRUST_PROXY: "1"
+      COOKIE_SECURE: "false"
+      LOG_LEVEL: info
+      SHUTDOWN_TIMEOUT_MS: 10000
+      HTTP_REQUEST_TIMEOUT_MS: 30000
+      HTTP_HEADERS_TIMEOUT_MS: 10000
+      HTTP_KEEP_ALIVE_TIMEOUT_MS: 5000
+      DEPENDENCY_TIMEOUT_MS: 500
+      REDIS_COMMAND_TIMEOUT_MS: 250
+      REDIS_CONNECT_TIMEOUT_MS: 1000
+      RETRY_BUDGET: 2
+      FAULT_INJECTION_ENABLED: "true"
+      BULKHEAD_CONCURRENCY: 2
+      BULKHEAD_QUEUE: 2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3020/health/live').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  nginx:
+    image: nginx:1.29-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  resilient-postgres-data:
