@@ -31,6 +31,7 @@
 - [21. 学习指导文件生成规则](#21-学习指导文件生成规则)
 - [22. 资料使用顺序](#22-资料使用顺序)
 - [23. 最终验收标准](#23-最终验收标准)
+- [2026-10 增量更新：版本、就业与 AI 工程](#2026-delta)
 
 ---
 
@@ -385,6 +386,13 @@ key 为什么不能随便用 index？
 controlled input 和 uncontrolled input 的区别是什么？
 ```
 
+### 2026-10 增量模块：Modern React Baseline
+
+- **优先级 / 新增工时**：P1 / 2h，不替代原 Phase。
+- **新增学习与练习**：函数组件、JSX、composition；区分组件函数执行、React element 与 DOM commit。计划新增练习：practices/01-components/2026-jsx-element-runtime.md。
+- **工程验收**：最小实验解释 JSX 转换、组件调用与渲染纯度，不把 class-first 模式作为新项目默认范式。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
+
 ---
 
 ## 6. Phase 2：React 渲染机制与状态心智模型
@@ -465,6 +473,13 @@ functional update 解决什么问题？
 React 如何决定复用一个组件还是重新创建？
 key 如何影响 state 保留和重置？
 ```
+
+### 2026-10 增量模块：Identity & Scheduling Diagnostics
+
+- **优先级 / 新增工时**：P0 / 3h，不替代原 Phase。
+- **新增学习与练习**：state identity、key、render/commit、Strict Mode 开发期重复调用；记录 React DevTools 和日志。
+- **工程验收**：证明三组 state preserve/reset 案例，并解释 render 不能包含副作用。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -548,6 +563,13 @@ React.memo 什么时候无效？
 custom hook 和普通函数有什么区别？
 ```
 
+### 2026-10 增量模块：Effect Events & Request Cancellation
+
+- **优先级 / 新增工时**：P0 / 4h，不替代原 Phase。
+- **新增学习与练习**：useEffectEvent、AbortController、Effect cleanup、stale response race；计划新增 practices/03-hooks/2026-effect-race.test.tsx。
+- **工程验收**：连续输入搜索时旧响应不覆盖新结果；卸载取消请求；自动化测试防回归。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
+
 ---
 
 ## 8. Phase 4：TypeScript 与 React 类型建模
@@ -626,6 +648,13 @@ ReactNode、ReactElement、JSX.Element 有什么区别？
 generic component 如何保持 item 类型推断？
 Context 为什么应该封装成 custom hook？
 ```
+
+### 2026-10 增量模块：Type Contracts vs Runtime Validation
+
+- **优先级 / 新增工时**：P0 / 4h，不替代原 Phase。
+- **新增学习与练习**：TypeScript 7 工具链兼容性实验；discriminated props、generics、ref；外部 JSON 从 unknown 经 schema 验证进入业务层。
+- **工程验收**：组件 API 不滥用 any；至少两个类型检查通过但运行时输入无效的反例。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -722,6 +751,13 @@ API client 为什么要统一错误格式？
 route-level code splitting 有什么价值？
 ```
 
+### 2026-10 增量模块：Feature Ownership & API Contracts
+
+- **优先级 / 新增工时**：P0 / 3h，不替代原 Phase。
+- **新增学习与练习**：为 feature 定义 public API、内部目录、依赖方向；写 React SPA、Next BFF、Node API 职责 ADR。
+- **工程验收**：无跨 feature 深层 import；解释复用、领域耦合与服务端数据所有权。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
+
 ---
 
 ## 10. Phase 6：状态管理、服务端状态与数据缓存
@@ -799,6 +835,13 @@ Context 为什么可能导致大面积重渲染？
 Redux Toolkit 和 Zustand 的取舍是什么？
 哪些状态应该放进 URL？
 ```
+
+### 2026-10 增量模块：State Taxonomy & Optimistic Conflict
+
+- **优先级 / 新增工时**：P0 / 4h，不替代原 Phase。
+- **新增学习与练习**：local/UI、URL、form、server cache、global client、AI stream state；TanStack Query 乐观更新、回滚、冲突与取消。
+- **工程验收**：服务端 409/500 时 UI 回滚且与 server state 一致。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -878,6 +921,13 @@ modal 为什么要处理 focus trap？
 aria-describedby 有什么作用？
 组件库为什么要区分 primitive component 和 business component？
 ```
+
+### 2026-10 增量模块：Accessible & Trusted UI
+
+- **优先级 / 新增工时**：P1 / 3h，不替代原 Phase。
+- **新增学习与练习**：keyboard/focus、semantic form、dialog、错误提示、Trusted Types 与危险 HTML 风险。
+- **工程验收**：核心表单可纯键盘完成；焦点恢复；不可信 HTML 有安全测试。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -962,6 +1012,13 @@ useDeferredValue 和 debounce 的区别是什么？
 如何用 Profiler 判断优化是否有效？
 ```
 
+### 2026-10 增量模块：React Compiler 1.0 Measurement
+
+- **优先级 / 新增工时**：P0 / 5h，不替代原 Phase。
+- **新增学习与练习**：React Compiler 1.0 构建期 memoization、Rules of React、Profiler 对照；了解 View Transitions / Activity。
+- **工程验收**：保存 compiler on/off 性能证据；说明 Compiler 不替代 state identity 与 render purity。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
+
 ---
 
 ## 13. Phase 9：测试、质量保障与前端工程化
@@ -1039,6 +1096,13 @@ waitFor 什么时候需要使用？
 exhaustive-deps 为什么不是烦人的规则，而是闭包边界检查？
 CI 里为什么要分 lint、typecheck、test、build？
 ```
+
+### 2026-10 增量模块：Async UI Regression & Security Patches
+
+- **优先级 / 新增工时**：P0 / 4h，不替代原 Phase。
+- **新增学习与练习**：Vitest/RTL/MSW/Playwright 增加 abort/race/error/a11y；依赖安全公告、补丁和 smoke tests。
+- **工程验收**：CI 覆盖 stale response、provider timeout、keyboard flow、依赖升级回归。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -1127,6 +1191,13 @@ Next.js 的 loading.tsx 和 Suspense boundary 有什么关系？
 Edge runtime 和 Node runtime 有什么差异？
 ```
 
+### 2026-10 增量模块：RSC Serialization & Security Lifecycle
+
+- **优先级 / 新增工时**：P0 / 4h，不替代原 Phase。
+- **新增学习与练习**：区分 React 与 Next RSC implementation；RSC payload、client boundary、secret leak、2025 RSC 安全公告。
+- **工程验收**：计划新增 rsc-security-checklist.md；证明 client bundle 无 secret；核查 patched dependencies。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
+
 ---
 
 ## 15. Phase 11：React 19、Actions 与 React Compiler
@@ -1200,6 +1271,13 @@ React Compiler 为什么要求组件保持 pure？
 React Compiler 会不会让你不需要理解 render？
 什么时候应该保留手动 memoization？
 ```
+
+### 2026-10 增量模块：React 19.3 & Compiler Delta
+
+- **优先级 / 新增工时**：P0 / 5h，不替代原 Phase。
+- **新增学习与练习**：依据 React 19.3 官方说明分别实验 View Transitions、Fragment refs、browser()、Trusted Types、Actions/Compiler。
+- **工程验收**：每个实验给出最小用例、版本和不适用场景；browser() 不是 SSR/hydration 万能修复。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -1283,6 +1361,13 @@ web vitals 如何和 React 性能优化关联？
 如何设计一次 React 大版本升级计划？
 代码评审时如何判断一个 useEffect 是否必要？
 ```
+
+### 2026-10 增量模块：Operational Ownership & Release ADR
+
+- **优先级 / 新增工时**：P1 / 4h，不替代原 Phase。
+- **新增学习与练习**：release checklist、dependency policy、Web Vitals、错误追踪、回滚方案与 ADR。
+- **工程验收**：完成升级、测试、发布、回滚演练，保留基线和恢复证据。
+- **面试验收**：解释机制与错误反例，并展示日志、测试或 Profiler 证据。
 
 ---
 
@@ -1483,6 +1568,16 @@ optimization report
 ```txt
 高级差异化项目。
 ```
+
+#### 2026-10 Planned Extension：Explain This Dashboard（不新建项目）
+
+在原有 Query-driven Dashboard 上追加“Explain this spike”：React 发送 metricId、时间区间、过滤条件和可见数据上下文到既有 Node/Next API；模型密钥和工具执行只在 server。本扩展仍属计划，不能写成已完成。
+
+- **UI contract**：区分 query/server、URL、AI stream、conversation、tool approval state；覆盖 loading、partial、cancelled、error、retry、complete。
+- **取消与并发**：AbortController 从 UI 传播至 server/provider；旧 stream 不覆盖当前结果。
+- **可信输出**：后端返回经过 schema 验证的结构化结果和数据来源；不把模型文本直接当可信 HTML。
+- **质量门禁**：Playwright 覆盖慢流、断流、取消、重试、权限拒绝；Profiler 证明 token streaming 不引起 dashboard 全树无意义重渲染。
+- **Portfolio 证据**：录屏、状态机图、API contract、race regression test、性能前后对比。
 
 ---
 
@@ -1811,3 +1906,76 @@ Next.js 官方文档负责框架边界。
 ```
 
 这才是“精通 React”在官方文档、市场情况和招聘需求三个维度下都站得住的标准。
+
+---
+
+<a id="2026-delta"></a>
+
+## 2026-10 增量更新：版本、就业与 AI 工程
+
+> 基准日期：2026-10-28。只补充原有 12 个 Phase 和 6 个 Planned Projects；不重命名、不删除、不假定新增练习已经创建。原始 Markdown 是事实源，PDF 仅作阅读副本，避免从乱码 PDF 覆盖原文。
+
+### A. 版本基线与兼容边界
+
+| 组件 | 2026-10 学习基线 | 必须区分的机制 |
+|---|---|---|
+| React | React 19.3 stable | React Compiler 1.0 是构建期优化器，不改变 state identity、render/commit 与 Effect 语义 |
+| TypeScript | TypeScript 7 stable（先检查工具链兼容性） | 类型检查不等于运行时 JSON 验证；编译器提速不等于页面运行提速 |
+| Next.js | Next.js 16.2（深入内容在 Next roadmap） | React SPA 与 RSC/server functions 有不同执行边界 |
+| Node.js | Node 24 LTS（后端生产练习） | HTTP、鉴权、数据库和 LLM provider 调用归 server；浏览器不得保存 provider secret |
+| Vercel AI SDK | AI SDK 7（仅在 AI 集成时引入） | Node 22+、ESM；UI hooks 不等于 agent 权限或持久化工作流 |
+
+React 19.3 新 API 先做独立 lab，再按浏览器支持、SSR 边界和需求选择。React Server Components 安全公告意味着 Next/RSC 项目必须维护框架依赖补丁清单。
+
+### B. 跨框架职责去重
+
+| 关注点 | React roadmap 学习与交付 | 其他路线负责 |
+|---|---|---|
+| UI、组件与状态 | 渲染纯度、identity、Hooks、TanStack Query、表单、a11y、AI streaming UX | Vue 对照 reactivity/composables，不重复同一业务项目 |
+| API、身份与授权 | 定义调用 contract、处理 401/403 与 UI 状态 | Node 或 Next BFF 执行真实 authz、schema validation、rate limit |
+| LLM/agent | 展示进度、取消、引用、审批与错误恢复 | Node/Next 负责 provider API、tool loop、RAG、eval、审计 |
+| 生产工程 | RTL/MSW/Playwright、Profiler、Web Vitals | Next/Vercel 负责部署、缓存、BFF、server trace；Node 负责后台任务 |
+
+AI UI contract 练习：定义 ExplainMetricRequest（metricId、from、to、filters）和 discriminated union 状态 idle / streaming / awaiting_approval / complete / error；说明联合类型约束的是 UI 状态组合，网络数据仍必须 runtime validate。
+
+### C. AI-assisted Engineering：Codex/Agent 工作流（P0，共用规范）
+
+1. **任务契约**：明确输入、输出、受影响文件、禁止修改范围、版本、验收命令和回滚办法。
+2. **上下文管理**：提供本章 roadmap、learning guide、组件/API contract、最小错误复现；可在 AGENTS.md 记录稳定约束。
+3. **最小 diff**：Agent 先阅读源文件和测试，再提出 patch；不允许静默删除原练习或项目。
+4. **人工审查**：检查异步竞争、权限、类型断言、依赖升级与测试是否验证真实行为；危险操作需要明确批准。
+5. **质量门禁**：lint → typecheck → unit/integration → E2E → build，保存实际输出；“AI 已检查”不等于测试通过。
+6. **复盘**：记录 Agent 错误假设、缺失上下文、回归测试和人工修改，强化独立工程设计能力。
+
+### D. 求职优先级与可展示证据
+
+| 优先级 | 技能组合 | Portfolio 证据 |
+|---|---|---|
+| P0 | TypeScript + React、HTTP/API、测试、a11y、异步状态与错误恢复 | 可访问 UI、自动化测试、API contract、状态边界说明 |
+| P0 | React + Node/Next + PostgreSQL + authz + AI tools | 端到端流程；server 鉴权、schema、取消、审批与 eval |
+| P1 | React Compiler、CI/CD、Observability、Docker、RAG | 性能 baseline、trace、部署记录、RAG 引用正确性测试 |
+| P2 | 微前端、复杂分布式、Swift native client | 先完成主线项目，再按目标岗位选择 |
+
+这是学习 ROI 判断，不是岗位数量统计。职位标题、地区、资历和技能关键词不可直接比较；投递前对目标地区 20–30 份真实 JD 做可追溯抽样。
+
+### E. 执行顺序与可测量门禁
+
+- **第 1 轮（P0，12–16h）**：Phase 2/3/4 的 identity、Effect race、runtime validation。
+- **第 2 轮（P0，12–16h）**：Phase 6/8/9 的 optimistic rollback、Compiler profiling、async regression。
+- **第 3 轮（P0，10–14h）**：Phase 10/11 的 RSC security、React 19.3 labs；Next 迁移留给 Next roadmap。
+- **第 4 轮（项目扩展，12–20h）**：Query-driven Dashboard 的 Explain This Dashboard，复用既有 Node/Next AI 服务。
+
+每轮要保存 baseline、可复现错误、测试修复、验收日志与机制解释。性能预算按环境与负载制定，不统一硬编码 p95。AI eval 使用固定 golden cases，跟踪 schema-valid rate、task success、未经授权工具执行、取消率、token 成本和延迟。
+
+### F. 官方资料与招聘证据入口
+
+- [React 19.3 官方发布说明](https://react.dev/blog/2026/09/09/react-19-3)
+- [React Compiler 1.0](https://react.dev/blog/2025/10/07/react-compiler-1)
+- [React 官方安全公告](https://react.dev/blog)
+- [React：You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+- [TypeScript 官方文档](https://www.typescriptlang.org/docs/)
+- [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/)
+- [Vercel AI SDK 7](https://vercel.com/changelog/ai-sdk-7)
+- [OpenAI API 开发者文档](https://developers.openai.com/api/docs)
+- [OWASP GenAI Security](https://genai.owasp.org/)
+- [LinkedIn 招聘样本入口（需按地区重新核验）](https://www.linkedin.com/jobs/)
